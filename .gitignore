@@ -19,3 +19,10 @@ build/
 
 # Environment
 .env*
+
+# Models & Binaries
+*.gguf
+*.exe
+*.bin
+*.pt
+*.onnx
