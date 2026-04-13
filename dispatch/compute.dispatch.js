@@ -15,7 +15,7 @@ import { getPipeline } from '../pipeline/pipeline.cache.js';
 import { getBuffer, releaseBuffer } from '../buffers/buffer.pool.js';
 import { matmulWGSL } from '../shaders/matmul.wgsl.js';
 
-export function prepareMatWuTask(device, matA, matB, size) {
+export function prepareMatMulTask(device, matA, matB, size) {
   return {
     TAG: "LEEWAY.COMPUTE.MATMUL.EXEC",
     REGION: "L7_EXECUTION_FABRIC",
@@ -93,4 +93,4 @@ export function prepareMatWuTask(device, matA, matB, size) {
     }
   };
 }
-export { prepareMatWuTask as prepareMatMulTask };
+// No alias needed, function correctly named above.
