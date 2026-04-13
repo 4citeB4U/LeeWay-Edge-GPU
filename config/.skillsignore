@@ -1,0 +1,63 @@
+# .skillsignore - Patterns to exclude from skill discovery
+
+# Version control
+.git/
+.gitignore
+.github/
+
+# Dependencies
+node_modules/
+__pycache__/
+.venv/
+venv/
+env/
+pip-cache/
+
+# Build and dist
+dist/
+build/
+*.egg-info/
+
+# IDE and editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+.cache/
+
+# Tests (only if not a test-focused skill)
+test/
+tests/
+coverage/
+.coverage
+
+# Config (unless needed)
+.env
+.env.local
+.env.*.local
+
+# Optional: Exclude incomplete skills
+.incomplete/
+draft/
+experimental/
+
+# Backup files
+*.bak
+*.backup
+~*
+
+# Archive files
+*.zip
+*.tar.gz
+*.rar

@@ -1,0 +1,22 @@
+# fly.toml app configuration file
+# Ref: https://fly.io/docs/reference/configuration/
+
+app = "leeway-edge-gpu"
+primary_region = "ord"
+
+[build]
+  [build.args]
+    NODE_VERSION = "18"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = true
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ["app"]
+
+[[vm]]
+  cpu_kind = "shared"
+  cpus = 1
+  memory_mb = 256

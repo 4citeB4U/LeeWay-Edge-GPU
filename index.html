@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LeeWay Deployment Center</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #111418;
+      --panel-bg: #1a1e24;
+      --panel-border: rgba(255, 255, 255, 0.05);
+      --panel-shadow: inset 0 0 20px rgba(0,0,0,0.5);
+      --text-main: #d1d5db;
+      --text-muted: #8b929d;
+      --cyan: #4bc4d9;
+      --cyan-dim: rgba(75, 196, 217, 0.2);
+      --green: #4ade80;
+      --orange: #f59e0b;
+      --red: #ef4444;
+      --font-sans: 'Inter', sans-serif;
+      --font-mono: 'IBM Plex Mono', monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* HEADER */
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 15px 20px;
+      background: rgba(0,0,0,0.2);
+      border-bottom: 1px solid var(--panel-border);
+    }
+    
+    .brand-area { display: flex; align-items: center; gap: 15px; }
+    .brand-logo { width: 24px; height: 24px; background: var(--cyan); clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%); }
+    .welcome { font-size: 0.9rem; color: var(--text-muted); }
+    .welcome strong { color: var(--text-main); }
+    
+    .console-title { font-size: 1.1rem; font-weight: 600; letter-spacing: 1px; color: var(--text-muted); }
+    .console-title strong { color: #fff; }
+    
+    .time { font-size: 0.85rem; color: var(--text-muted); font-family: var(--font-mono); }
+
+    /* LAYOUT GRID */
+    .dashboard {
+      display: grid;
+      grid-template-columns: 220px 1.2fr 2fr;
+      gap: 15px;
+      padding: 15px;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    /* PANELS */
+    .panel {
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      border-radius: 6px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 15px;
+      border-bottom: 1px solid var(--panel-border);
+      background: rgba(255,255,255,0.02);
+      font-weight: 600;
+      font-size: 0.85rem;
+    }
+    
+    .dots { display: flex; gap: 3px; }
+    .dot { width: 4px; height: 4px; background: var(--text-muted); border-radius: 50%; }
+
+    .panel-body { padding: 15px; flex: 1; overflow-y: auto; }
+
+    /* 1. SIDEBAR */
+    .sidebar { display: flex; flex-direction: column; gap: 5px; }
+    .nav-item {
+      padding: 10px 15px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      border-radius: 4px;
+      transition: 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .nav-item:hover, .nav-item.active { background: rgba(255,255,255,0.05); color: #fff; }
+    .nav-item.active { border-left: 3px solid var(--cyan); }
+    
+    .cmd-center { font-size: 0.7rem; font-weight: 700; color: var(--text-muted); letter-spacing: 1px; margin: 15px 0 5px 15px; }
+    
+    .bottom-input {
+      margin-top: auto;
+      padding: 15px;
+    }
+    
+    .raw-input {
+      width: 100%;
+      background: #000;
+      border: 1px solid var(--panel-border);
+      color: var(--cyan);
+      padding: 10px;
+      border-radius: 4px;
+      font-family: var(--font-mono);
+      outline: none;
+    }
+
+    /* 2. MIDDLE COLUMN */
+    .middle-col { display: flex; flex-direction: column; gap: 15px; }
+    
+    .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
+    .stat-box { display: flex; flex-direction: column; }
+    .stat-label { font-size: 0.75rem; color: var(--text-muted); margin-bottom: 5px; }
+    .stat-value { font-size: 1.5rem; font-weight: 600; display: flex; align-items: baseline; gap: 5px; }
+    .stat-chart-mini { width: 20px; height: 10px; background: repeating-linear-gradient(90deg, var(--cyan) 0 3px, transparent 0 5px); }
+    
+    .agent-lee-box {
+      border: 1px solid var(--cyan-dim);
+      background: linear-gradient(90deg, rgba(75, 196, 217, 0.1) 0%, transparent 100%);
+      padding: 15px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+    .hexagon { width: 50px; height: 50px; border: 2px solid var(--cyan); clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%); display: flex; justify-content: center; align-items: center; box-shadow: 0 0 15px var(--cyan-dim); }
+    .hexagon-inner { width: 30px; height: 30px; background: var(--cyan); clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%); }
+    .agent-msg h3 { font-size: 0.9rem; margin-bottom: 5px; font-weight: 600;}
+    .agent-msg p { font-size: 0.8rem; color: var(--text-muted); }
+    
+    .task-activity { display: flex; gap: 10px; background: #111; border-radius: 4px; padding: 10px; }
+    .task-vol { flex: 1; text-align: center; }
+    .task-vol span { display: block; font-size: 0.7rem; color: var(--text-muted); margin-bottom: 5px; }
+    .task-vol strong { font-size: 1.2rem; font-family: var(--font-mono); }
+    
+    .command-list { display: flex; flex-direction: column; gap: 8px; margin-top: 15px; }
+    .cmd-item { display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; padding: 8px 10px; background: rgba(0,0,0,0.2); border-radius: 4px; }
+    .cmd-item-left { display: flex; align-items: center; gap: 10px; }
+    .cmd-dot { width: 8px; height: 8px; border-radius: 50%; }
+    .cmd-dot.cyan { background: var(--cyan); }
+    .cmd-dot.orange { background: var(--orange); }
+    .cmd-dot.muted { background: var(--text-muted); }
+    .cmd-time { font-size: 0.7rem; color: var(--text-muted); }
+    
+    .chat-input-area { display: flex; gap: 10px; margin-top: auto; }
+    .chat-input-area input { flex: 1; background: #000; border: 1px solid var(--panel-border); color: #fff; padding: 10px 15px; border-radius: 4px; font-family: var(--font-sans); outline: none;}
+    .btn-send { background: var(--panel-border); color: #fff; border: 1px solid #333; padding: 0 20px; font-weight: 600; cursor: pointer; border-radius: 4px; }
+    .btn-send:hover { background: #333; }
+
+    /* 3. RIGHT COLUMN */
+    .right-col { display: flex; flex-direction: column; gap: 15px; }
+    
+    .map-tabs { display: flex; gap: 20px; padding: 10px 15px; border-bottom: 1px solid var(--panel-border); font-size: 0.8rem; color: var(--text-muted); }
+    .tab.active { color: var(--cyan); border-bottom: 1px solid var(--cyan); padding-bottom: 5px; }
+    
+    /* Simulate 3D Map Area */
+    .network-map { height: 200px; background: radial-gradient(circle at center, rgba(75,196,217,0.1) 0%, #000 100%); position: relative; border-bottom: 1px solid var(--panel-border); overflow: hidden;}
+    .node-map-img { width: 100%; height: 100%; object-fit: cover; opacity: 0.8; mix-blend-mode: screen; filter: hue-rotate(180deg) brightness(1.5); /* Simulation of the graph */ }
+    .map-labels { display: flex; justify-content: space-around; padding: 10px; font-size: 0.75rem; color: var(--text-muted); background: rgba(0,0,0,0.5); }
+    .map-label { border: 1px solid #333; padding: 4px 10px; border-radius: 12px; }
+
+    .bottom-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; flex: 1; }
+    
+    /* Gauges */
+    .gauges { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+    .gauge { background: #111; border: 1px solid var(--panel-border); border-radius: 6px; padding: 15px; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative;}
+    .gauge-circle { width: 80px; height: 40px; border-top-left-radius: 40px; border-top-right-radius: 40px; border: 8px solid var(--panel-border); border-bottom: 0; position: relative; display: flex; justify-content: center; align-items: flex-end; padding-bottom: 5px; }
+    .gauge-circle.orange { border-color: var(--orange) rgba(255,255,255,0.05) rgba(255,255,255,0.05) var(--orange); transform: rotate(45deg); margin-bottom: -15px;}
+    .gauge-circle.green { border-color: var(--green) var(--green) rgba(255,255,255,0.05) rgba(255,255,255,0.05); transform: rotate(-45deg); margin-bottom: -15px;}
+    .gauge-value { font-size: 1.2rem; font-weight: 700; position: absolute; bottom: 0; }
+    .gauge-label { font-size: 0.7rem; color: var(--text-muted); margin-top: 15px; text-transform: uppercase;}
+    
+    .bandwidth { display: flex; justify-content: space-between; gap: 10px; margin-top: 10px; }
+    .bw-box { flex: 1; background: #111; border: 1px solid var(--panel-border); text-align: center; padding: 10px; border-radius: 4px; font-size: 1rem; font-weight: 600; }
+    .bw-box span { display: block; color: var(--orange); font-size: 0.6rem; }
+    .bw-box.up span { color: var(--green); }
+
+    .econ-stats .stat-item { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--panel-border); font-size: 0.85rem; }
+    .econ-stats .stat-item:last-child { border: none; padding-bottom: 0; }
+    .econ-stats .val.green { color: var(--green); font-family: var(--font-mono); }
+    .econ-stats .val.orange { color: var(--orange); font-family: var(--font-mono); }
+    .econ-stats .val.white { color: #fff; font-family: var(--font-mono); font-size: 1.1rem; }
+
+    .alerts { display: flex; flex-direction: column; gap: 10px; }
+    .alert-item { display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; color: var(--text-main); }
+    .alert-left { display: flex; align-items: center; gap: 10px; }
+    .alert-icon { color: var(--orange); font-weight: bold; }
+    .alert-time { font-size: 0.7rem; color: var(--text-muted); }
+
+    .event-log { display: flex; flex-direction: column; gap: 10px; }
+    .event-item { display: flex; justify-content: space-between; font-size: 0.75rem; font-family: var(--font-mono); }
+    .event-time { color: var(--text-muted); width: 60px; }
+    .event-node { color: #fff; flex: 1; }
+    .event-status.green { color: var(--green); }
+    .event-status.red { color: var(--red); }
+    .event-status.muted { color: var(--text-muted); }
+
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand-area">
+      <div class="brand-logo"></div>
+      <div class="welcome">Welcome, <strong>Leonard Lee</strong></div>
+    </div>
+    <div class="console-title"><strong>LeeWay</strong> Edge GPU</div>
+    <div class="time" id="clock">12:45 PM</div>
+  </header>
+
+  <div class="dashboard">
+    <!-- LEFT SIDEBAR -->
+    <div class="panel sidebar">
+      <div class="panel-body" style="padding: 10px;">
+        <div class="nav-item active">
+          <span>⊞</span> Overview
+        </div>
+        <div class="nav-item">
+          <span>≡</span> Nodes
+        </div>
+        <div class="nav-item">
+          <span>👤</span> Tasks
+        </div>
+        <div class="nav-item">
+          <span>📈</span> Economy
+        </div>
+        <div class="nav-item">
+          <span>🛡</span> Trust
+        </div>
+        <div class="nav-item">
+          <span>⚙</span> Settings
+        </div>
+
+        <div class="cmd-center">COMMAND CENTER ></div>
+        <!-- Sliders placeholders -->
+        <div style="padding: 15px; display: flex; flex-direction: column; gap: 15px;">
+           <div style="height: 2px; width: 100%; background: #333; position: relative;">
+              <div style="width: 10px; height: 10px; background: #66fcf1; border-radius: 50%; position: absolute; top: -4px; left: 20%;"></div>
+           </div>
+           <div style="height: 2px; width: 100%; background: #333; position: relative;">
+              <div style="width: 10px; height: 10px; background: #66fcf1; border-radius: 50%; position: absolute; top: -4px; right: 20%;"></div>
+           </div>
+        </div>
+      </div>
+      <div class="bottom-input">
+        <input type="text" class="raw-input" placeholder="Enter Command..." autocomplete="off">
+      </div>
+    </div>
+
+    <!-- MIDDLE COLUMN -->
+    <div class="middle-col">
+      <div class="panel">
+        <div class="panel-header">
+          System Overview
+          <div class="dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+        </div>
+        <div class="panel-body">
+          <div class="stats-row">
+            <div class="stat-box">
+              <span class="stat-label">Active Nodes</span>
+              <span class="stat-value" id="statNodes">128 <div class="stat-chart-mini"></div></span>
+            </div>
+            <div class="stat-box">
+              <span class="stat-label">Tasks Running</span>
+              <span class="stat-value" id="statTasks">56 <div class="stat-chart-mini" style="background: repeating-linear-gradient(90deg, var(--green) 0 3px, transparent 0 5px);"></div></span>
+            </div>
+            <div class="stat-box">
+              <span class="stat-label">Cluster Load</span>
+              <span class="stat-value" id="statLoad">72% <div style="width:20px;height:20px;border-radius:50%;border:3px solid var(--cyan); border-right-color:transparent;"></div></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel" style="background: var(--panel-bg);">
+        <div class="panel-body">
+          <div class="agent-lee-box">
+            <div class="hexagon"><div class="hexagon-inner"></div></div>
+            <div class="agent-msg">
+              <h3>LWA Core</h3>
+              <p>Redistributing workloads:<br>Latency reduced by 23%.</p>
+            </div>
+            <div class="dots" style="margin-left: auto; align-self: flex-start;"><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel" style="flex: 1;">
+        <div class="panel-header">
+          TASK STREAM
+        </div>
+        <div class="panel-body flex" style="display:flex; flex-direction:column;">
+          <div class="command-list" id="taskStream" style="font-family: var(--font-mono); overflow-y:auto; flex:1;">
+            <!-- Live executing tasks injected here -->
+          </div>
+        </div>
+      </div>
+
+      <div class="panel" style="flex: 1;">
+        <div class="panel-header" style="color: var(--cyan);">
+          QUAD PIPELINE BREAKDOWN
+        </div>
+        <div class="panel-body">
+          <div id="pipelinePanel" style="font-family: var(--font-mono); font-size: 0.8rem; line-height: 1.5; color: var(--text-main);">
+             Awaiting Task...
+          </div>
+        </div>
+      </div>
+          
+      <div class="chat-input-area" style="margin-top:20px;">
+        <input type="text" id="commandBox" placeholder="Enter command...">
+        <button id="btnExecuteCommand" class="btn-send">EXECUTE</button>
+      </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT COLUMN -->
+    <div class="right-col">
+      <div class="panel">
+        <div class="map-tabs">
+          <div class="tab active">3D Network Map</div>
+          <div class="tab">Federation Events</div>
+          <div class="tab">Trust Alerts</div>
+          <div class="tab">Telemetry Events</div>
+          <div class="dots" style="margin-left: auto; align-self:center;"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+        </div>
+        <div class="network-map">
+          <!-- Fallback simulation of the intricate graph visual -->
+          <svg width="100%" height="100%" viewBox="0 0 400 200" style="position:absolute; inset: 0;">
+             <!-- Paths -->
+             <path d="M50 100 L150 50 L250 120 L350 80" stroke="rgba(75,196,217,0.4)" stroke-width="1" fill="none"/>
+             <path d="M80 150 L180 100 L280 160 L380 90" stroke="rgba(245,158,11,0.4)" stroke-width="1" fill="none"/>
+             <path d="M150 50 L180 100 L250 120" stroke="rgba(75,196,217,0.4)" stroke-width="1" fill="none"/>
+             <!-- Nodes -->
+             <circle cx="50" cy="100" r="6" fill="#f59e0b" />
+             <circle cx="150" cy="50" r="8" fill="#4bc4d9" />
+             <circle cx="250" cy="120" r="7" fill="#4bc4d9" />
+             <circle cx="350" cy="80" r="6" fill="#f59e0b" />
+             <circle cx="80" cy="150" r="5" fill="#f59e0b" />
+             <circle cx="180" cy="100" r="9" fill="#10b981" />
+             <circle cx="280" cy="160" r="4" fill="#f59e0b" />
+             <circle cx="380" cy="90" r="5" fill="#4bc4d9" />
+          </svg>
+        </div>
+        <div class="map-labels">
+          <div class="map-label">Cluster Alpha</div>
+          <div class="map-label">Cluster Beta</div>
+          <div class="map-label">Edge Devices</div>
+        </div>
+      </div>
+
+      <div class="bottom-grid">
+        <div class="right-vertical" style="display:flex; flex-direction:column; gap:15px;">
+           <div class="panel">
+              <div class="panel-header">
+                Resource Status
+                <div class="dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+              </div>
+              <div class="panel-body" style="padding: 10px;">
+                <div class="gauges">
+                  <div class="gauge">
+                    <div id="cpuVal" style="font-size:1.2rem; font-weight:700; color:#fff; margin-bottom:5px;">0%</div>
+                    <div id="cpuBar" style="width:50px; height:25px; border:5px solid var(--orange); border-bottom:none; border-radius:25px 25px 0 0; transition: 0.5s; opacity: 0.3;"></div>
+                    <div class="gauge-label">CPU Usage</div>
+                  </div>
+                  <div class="gauge">
+                    <div id="memVal" style="font-size:1.2rem; font-weight:700; color:#fff; margin-bottom:5px;">0%</div>
+                    <div id="memBar" style="width:50px; height:25px; border:5px solid var(--green); border-bottom:none; border-radius:25px 25px 0 0; transition: 0.5s; opacity: 0.3;"></div>
+                    <div class="gauge-label">Memory Usage</div>
+                  </div>
+                </div>
+                <div class="bandwidth">
+                   <div class="bw-box">
+                      <span>↓</span> <span id="bwDown">0.00</span> 
+                      <span style="display:inline; color:var(--text-muted);">Gbps</span>
+                   </div>
+                   <div class="bw-box up">
+                      <span>↑</span> <span id="bwUp">0.00</span> 
+                      <span style="display:inline; color:var(--text-muted);">Gbps</span>
+                   </div>
+                </div>
+              </div>
+           </div>
+
+           <div class="panel flex" style="flex:1;">
+             <div class="panel-header">
+                Alerts & Warnings
+                <div class="dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+              </div>
+              <div class="panel-body">
+                 <div class="alerts">
+                   <div class="alert-item">
+                     <div class="alert-left"><span class="alert-icon">⚠️</span> Node 08 Overheating</div>
+                     <span class="alert-time">1 min ago</span>
+                   </div>
+                   <div class="alert-item">
+                     <div class="alert-left"><span class="alert-icon">⚠️</span> Task Failure on Node 21</div>
+                     <span class="alert-time">1 min ago</span>
+                   </div>
+                   <div class="alert-item">
+                     <div class="alert-left"><span class="alert-icon">⚠️</span> High Latency Detected</div>
+                     <span class="alert-time">1 min ago</span>
+                   </div>
+                 </div>
+              </div>
+           </div>
+        </div>
+
+        <div class="right-vertical" style="display:flex; flex-direction:column; gap:15px;">
+           <div class="panel">
+              <div class="panel-header">
+                LWA THINKING PANEL
+              </div>
+              <div class="panel-body event-log">
+                 <div id="agentLeePanel" style="font-size: 0.8rem; line-height: 1.6; color: var(--cyan);">
+                    System booted. Monitoring Quad-Pipeline arrays.
+                 </div>
+              </div>
+           </div>
+           
+           <div class="panel" style="flex:1;">
+              <div class="panel-header">
+                NODE + MEMORY STATUS
+              </div>
+              <div class="panel-body event-log" id="nodePanel" style="font-family: var(--font-mono); font-size: 0.8rem; color: #fff;">
+                 Node A (GPU Edge) → 0% Load | REP 100<br>
+                 Memory Pool → Stable<br>
+              </div>
+           </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
