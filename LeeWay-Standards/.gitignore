@@ -1,0 +1,12 @@
+reports/
+.leeway/memory.json
+.leeway/processes.json
+.leeway/registry.json
+.leeway/ports.json
+.leeway/intents.json
+node_modules/
+dist/
+build/
+.next/
+coverage/
+*.log
