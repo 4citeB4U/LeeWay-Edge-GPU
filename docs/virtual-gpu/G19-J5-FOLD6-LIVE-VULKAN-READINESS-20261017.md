@@ -32,3 +32,6 @@ Perform a read-only inspection of the Vulkan ELF `DT_NEEDED` dependencies and ph
 
 ## Receipt
 Read-only evidence log only; no governed execution receipt or learning update.
+
+## Additional static ELF linkage inspection (same session)
+Read-only extraction of the verified CI archive and `readelf -d` on packaged AArch64 files showed `llama-cli` needs: `libllama-cli-impl.so`, `libllama-server-impl.so`, `libmtmd.so`, `libllama-common.so`, `libllama.so`, `libggml.so`, `libggml-cpu.so`, `libggml-vulkan.so`, `libggml-base.so`, plus Android `libm.so`, `libdl.so`, `libc.so`. The packaged `libggml-vulkan.so` needs `libggml-base.so`, `libvulkan.so`, `libm.so`, `libdl.so`, and `libc.so`. Those project libraries are present in the packaged `bin/` directory and `/system/lib64/libvulkan.so` is present on the device. Static dependency inventory PASS; actual Android loader and GPU runtime behavior remain UNVERIFIED.
