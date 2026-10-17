@@ -30,7 +30,10 @@ jobs:
             libvulkan-dev glslc spirv-headers spirv-tools
           glslc --version
           cmake --version
-          headers_config="$(dpkg -L spirv-headers | grep '/SPIRV-HeadersConfig.cmake
+          headers_config="$(dpkg -L spirv-headers | grep '/SPIRV-HeadersConfig.cmake$' | head -n1)"
+          test -n "$headers_config"
+          echo "SPIRV_HEADERS_DIR=$(dirname "$headers_config")" >> "$GITHUB_ENV"
+          echo "SPIR-V headers config: $headers_config"
 
       - name: Locate GitHub-hosted Android SDK
         run: |
