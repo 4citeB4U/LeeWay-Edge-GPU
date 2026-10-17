@@ -66,6 +66,15 @@ jobs:
           test "$(git -C upstream-llama rev-parse HEAD)" = "${LLAMA_COMMIT}"
           printf '%s\n' "${LLAMA_COMMIT}" > upstream-llama.commit
 
+      - name: Stage architecture-neutral Khronos Vulkan headers
+        run: |
+          set -euo pipefail
+          test -f /usr/include/vulkan/vulkan.hpp
+          mkdir -p build-headers/vulkan
+          cp -a /usr/include/vulkan/. build-headers/vulkan/
+          test -f build-headers/vulkan/vulkan.hpp
+          sha256sum build-headers/vulkan/vulkan.hpp
+
       - name: Configure Android ARM64 target with Vulkan and host shader compiler
         env:
           NDK_VER: "27.2.12479018"
@@ -78,6 +87,7 @@ jobs:
             -DGGML_NATIVE=OFF \
             -DGGML_OPENMP=OFF \
             -DGGML_VULKAN=ON \
+            -DCMAKE_CXX_FLAGS="-I${GITHUB_WORKSPACE}/build-headers" \
             -DSPIRV-Headers_DIR="${SPIRV_HEADERS_DIR}" \
             -DLLAMA_CURL=OFF \
             -DLLAMA_BUILD_TESTS=OFF \
