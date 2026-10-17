@@ -72,6 +72,9 @@ jobs:
           test -f /usr/include/vulkan/vulkan.hpp
           mkdir -p build-headers/vulkan
           cp -a /usr/include/vulkan/. build-headers/vulkan/
+          mkdir -p build-headers/spirv
+          cp -a /usr/include/spirv/. build-headers/spirv/
+          test -f build-headers/spirv/unified1/spirv.hpp
           test -f build-headers/vulkan/vulkan.hpp
           sha256sum build-headers/vulkan/vulkan.hpp
 
