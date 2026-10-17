@@ -31,12 +31,23 @@ jobs:
           glslc --version
           cmake --version
 
-      - name: Prepare Android SDK/NDK r27c
-        uses: android-actions/setup-android@v3
+      - name: Locate GitHub-hosted Android SDK
+        run: |
+          set -euo pipefail
+          : "${ANDROID_HOME:=/usr/local/lib/android/sdk}"
+          echo "ANDROID_HOME=${ANDROID_HOME}" >> "$GITHUB_ENV"
+          ls -la "${ANDROID_HOME}/cmdline-tools"
+          if [ -x "${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager" ]; then
+            echo "${ANDROID_HOME}/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
+          else
+            sdk="$(find "${ANDROID_HOME}/cmdline-tools" -type f -path '*/bin/sdkmanager' | head -n1)"
+            test -n "$sdk"
+            echo "$(dirname "$sdk")" >> "$GITHUB_PATH"
+          fi
 
       - name: Install fixed Android NDK
         run: |
-          yes | sdkmanager --licenses > /dev/null || true
+          set -euo pipefail
           sdkmanager "ndk;27.2.12479018" "platforms;android-35"
           test -f "${ANDROID_HOME}/ndk/27.2.12479018/build/cmake/android.toolchain.cmake"
 
