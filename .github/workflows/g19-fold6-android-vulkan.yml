@@ -27,8 +27,14 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
             build-essential cmake ninja-build git pkg-config \
-            libvulkan-dev glslc spirv-headers spirv-tools
+            libvulkan-dev spirv-headers spirv-tools
+          # Fail closed if the audited shader compiler build is unavailable.
+          sudo apt-get install -y --no-install-recommends \
+            glslc=2023.8-1build1 libshaderc1=2023.8-1build1
+          test "$(dpkg-query -W -f='${Version}' glslc)" = "2023.8-1build1"
+          test "$(dpkg-query -W -f='${Version}' libshaderc1)" = "2023.8-1build1"
           glslc --version
+          sha256sum "$(command -v glslc)"
           cmake --version
           headers_config="$(dpkg -L spirv-headers | grep '/SPIRV-HeadersConfig.cmake$' | head -n1)"
           test -n "$headers_config"
