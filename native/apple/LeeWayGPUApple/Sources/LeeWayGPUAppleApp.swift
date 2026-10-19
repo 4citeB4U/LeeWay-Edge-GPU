@@ -12,7 +12,8 @@ struct GPUReadbackView: View {
             Text("Physical GPU: " + (MTLCreateSystemDefaultDevice()?.name ?? "Unavailable"))
             Button("Run native Metal probe") { report = MetalReadback.execute() }
             Text(report).font(.system(.body, design: .monospaced)).textSelection(.enabled)
-            Text("Not a local AI model inference test").font(.caption)
+            Button("Run tiny local neural model") { report = TinyModelInference.run() }
+            Text("Tiny classifier is not a language model").font(.caption)
         }.padding()
     }
 }
