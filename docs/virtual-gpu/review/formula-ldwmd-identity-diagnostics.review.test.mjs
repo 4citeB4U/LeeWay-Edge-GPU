@@ -3,9 +3,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
-import {evaluateAppleGpuFormula} from './apple-gpu-formula-adapter.mjs';
-import {acquireAppleGpuMemoryLease} from './apple-gpu-ldwmd-adapter.mjs';
-import {executeAppleGpuRequest} from './apple-gpu-request-chain.mjs';
+import {join,isAbsolute} from 'node:path';
+import {pathToFileURL} from 'node:url';
+const ownerSourceDir=process.env.LEEWAY_GPU_RUNTIME_ADAPTER_DIR;
+if(!ownerSourceDir||!isAbsolute(ownerSourceDir))throw Error('PINNED_OWNER_ADAPTER_DIRECTORY_REQUIRED');
+const own=filename=>import(pathToFileURL(join(ownerSourceDir,filename)).href);
+const [{evaluateAppleGpuFormula},{acquireAppleGpuMemoryLease},{executeAppleGpuRequest}]=await Promise.all([
+ own('apple-gpu-formula-adapter.mjs'),own('apple-gpu-ldwmd-adapter.mjs'),
+ own('apple-gpu-request-chain.mjs')]);
 const requestId='formula-ldwmd-review-20261019',applicationId='leeway-gpu-apple';
 const digest=bytes=>createHash('sha256').update(bytes).digest('hex');
 const workloadA=Buffer.from('owner-original-gpu-workload-A','utf8');
