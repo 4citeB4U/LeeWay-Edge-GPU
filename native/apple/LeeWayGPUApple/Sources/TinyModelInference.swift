@@ -48,7 +48,7 @@ enum TinyModelInference {
         guard cb.status == .completed else { return "FAIL: GPU classifier command not completed" }
         let op = outputBuffer.contents().bindMemory(to: Float.self, capacity: outputCount)
         let diffs = (0..<outputCount).map { abs(op[$0] - expected[$0]) }
-        let maxError = diffs.max() ?? .infinity
+        let maxError = diffs.allSatisfy { $0.isFinite } ? (diffs.max() ?? .infinity) : .infinity
         return "model=FIXED_LINEAR_RELU_16x8\nbackend=APPLE_METAL\noutputs=8\nmax_abs_error=\(maxError)\nwall_ms=\(Double(durationNs) / 1e6)\nstate=\(maxError < 0.0001 ? "PASS" : "FAIL")\nNOT_LLM"
     }
 }
