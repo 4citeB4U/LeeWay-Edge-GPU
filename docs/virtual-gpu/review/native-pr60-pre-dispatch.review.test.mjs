@@ -121,3 +121,24 @@ test('post-stage owner STOP before Continuum append denies storage side effect',
  assert.equal(r.admitted,false);assert.equal(r.reason,'OWNER_STOP_REQUESTED');
  assert.equal(calls,0);
 });
+
+test('STOP discovered after native callback is attempted requires independent reconciliation',async t=>{
+ const f=services(t);let checks=0;
+ f.providers.verifyOwnerStop=async scope=>({...scope,verified:true,stopped:++checks>=4});
+ const result=await dispatchAppleGpuWithLease(input(),f.providers);
+ assert.equal(f.getNativeCalls(),1);
+ assert.equal(result.admitted,false);
+ assert.equal(result.reason,'OWNER_STOP_AFTER_NATIVE_DISPATCH');
+ assert.equal(result.dispatchAttempted,true);
+ assert.equal(result.independentReconciliationRequired,true);
+ assert.equal(result.receiptId,undefined);
+});
+test('native callback throws after reservation: outcome uncertain and no forged receipt',async t=>{
+ const f=services(t,{dispatchNative:async()=>{throw Error('simulated uncertain native outcome')}});
+ const result=await dispatchAppleGpuWithLease(input(),f.providers);
+ assert.equal(result.admitted,false);
+ assert.equal(result.reason,'NATIVE_METAL_DISPATCH_FAILED');
+ assert.equal(result.dispatchAttempted,true);
+ assert.equal(result.independentReconciliationRequired,true);
+ assert.equal(result.receiptId,undefined);
+});
