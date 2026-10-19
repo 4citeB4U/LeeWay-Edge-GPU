@@ -1,0 +1,20 @@
+name: LeeWayGPUApple
+options:
+  bundleIdPrefix: industries.leeway
+settings:
+  base:
+    IPHONEOS_DEPLOYMENT_TARGET: "17.0"
+    SWIFT_VERSION: "5.0"
+targets:
+  LeeWayGPUApple:
+    type: application
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - path: Sources
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: industries.leeway.gpu
+        PRODUCT_NAME: LeeWayGPU
+        GENERATE_INFOPLIST_FILE: YES
+        TARGETED_DEVICE_FAMILY: "1"

@@ -1,0 +1,49 @@
+name: LeeWay Apple GPU Native Build Qualification
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "native/apple/LeeWayGPUApple/**"
+      - ".github/workflows/apple-edge-gpu-qualification.yml"
+permissions:
+  contents: read
+jobs:
+  unsigned-iphone-build:
+    runs-on: macos-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: false
+      - name: Verify Apple toolchain
+        run: |
+          set -euo pipefail
+          xcodebuild -version
+          xcrun --sdk iphoneos --show-sdk-path
+      - name: Generate Xcode project
+        run: |
+          set -euo pipefail
+          brew install xcodegen
+          cd native/apple/LeeWayGPUApple
+          xcodegen generate --spec project.yml
+      - name: Build iPhone application
+        run: |
+          set -euo pipefail
+          xcodebuild -project native/apple/LeeWayGPUApple/LeeWayGPUApple.xcodeproj -scheme LeeWayGPUApple -configuration Release -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath "$RUNNER_TEMP/LeeWayGPUDerived" CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO build
+      - name: Package unsigned IPA
+        run: |
+          set -euo pipefail
+          APP="$RUNNER_TEMP/LeeWayGPUDerived/Build/Products/Release-iphoneos/LeeWayGPU.app"
+          test -d "$APP"
+          plutil -lint "$APP/Info.plist"
+          mkdir -p "$RUNNER_TEMP/gpu-ipa/Payload" "$RUNNER_TEMP/gpu-artifact"
+          ditto "$APP" "$RUNNER_TEMP/gpu-ipa/Payload/LeeWayGPU.app"
+          (cd "$RUNNER_TEMP/gpu-ipa" && zip -qry "$RUNNER_TEMP/gpu-artifact/LeeWayGPU-unsigned.ipa" Payload)
+          shasum -a 256 "$RUNNER_TEMP/gpu-artifact/LeeWayGPU-unsigned.ipa" | tee "$RUNNER_TEMP/gpu-artifact/SHA256SUMS"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: leeway-apple-gpu-build-${{ github.run_id }}
+          path: ${{ runner.temp }}/gpu-artifact/
+          if-no-files-found: warn
+          retention-days: 30
