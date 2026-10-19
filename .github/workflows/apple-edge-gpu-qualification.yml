@@ -20,6 +20,8 @@ jobs:
           set -euo pipefail
           xcodebuild -version
           xcrun --sdk iphoneos --show-sdk-path
+      - name: Verify local GPU opt-in source guard
+        run: node --test tests/apple-gpu-local-opt-in-source.test.mjs
       - name: Generate Xcode project
         run: |
           set -euo pipefail
