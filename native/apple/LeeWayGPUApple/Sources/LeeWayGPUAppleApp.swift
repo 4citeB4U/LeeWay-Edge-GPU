@@ -7,6 +7,7 @@ struct LeeWayGPUAppleApp: App {
 struct GPUReadbackView: View {
     @State private var report = "NOT_EXECUTED: launch on iPhone"
     var body: some View {
+        ScrollView {
         VStack(spacing: 20) {
             Text("LeeWay GPU Apple").font(.title).bold()
             Text("Physical GPU: " + (MTLCreateSystemDefaultDevice()?.name ?? "Unavailable"))
@@ -14,7 +15,9 @@ struct GPUReadbackView: View {
             Text(report).font(.system(.body, design: .monospaced)).textSelection(.enabled)
             Button("Run tiny local neural model") { report = TinyModelInference.run() }
             Text("Tiny classifier is not a language model").font(.caption)
+            LeeWayEcosystemView()
         }.padding()
+        }
     }
 }
 enum MetalReadback {
