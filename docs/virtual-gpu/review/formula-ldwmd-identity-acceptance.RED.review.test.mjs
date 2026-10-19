@@ -4,9 +4,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
-import {evaluateAppleGpuFormula} from './apple-gpu-formula-adapter.mjs';
-import {acquireAppleGpuMemoryLease} from './apple-gpu-ldwmd-adapter.mjs';
-import {executeAppleGpuRequest} from './apple-gpu-request-chain.mjs';
+import {join,isAbsolute} from 'node:path';
+import {pathToFileURL} from 'node:url';
+const ownerSourceDir=process.env.LEEWAY_GPU_RUNTIME_ADAPTER_DIR;
+if(!ownerSourceDir||!isAbsolute(ownerSourceDir))throw Error('PINNED_OWNER_ADAPTER_DIRECTORY_REQUIRED');
+const own=filename=>import(pathToFileURL(join(ownerSourceDir,filename)).href);
+const [{evaluateAppleGpuFormula},{acquireAppleGpuMemoryLease},{executeAppleGpuRequest}]=await Promise.all([
+ own('apple-gpu-formula-adapter.mjs'),own('apple-gpu-ldwmd-adapter.mjs'),
+ own('apple-gpu-request-chain.mjs')]);
 const requestId='canonical-workload-review-001',applicationId='leeway-gpu-apple';
 const deviceId='target-gpu-iphone-A',otherDevice='not-approved-device-B';
 const workloadA=Buffer.from('original-owner-workload-A');
