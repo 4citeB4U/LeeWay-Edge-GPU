@@ -1,0 +1,29 @@
+name: G18 G19 Device Evidence Contract Regression
+
+on:
+  pull_request:
+    paths:
+      - 'contracts/**'
+      - '.github/workflows/g19-device-evidence-contracts.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'contracts/**'
+      - '.github/workflows/g19-device-evidence-contracts.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  device-evidence-contracts:
+    name: G19 Device Evidence Contracts
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run source-only fail-closed contract regressions
+        run: node --test contracts/*.test.mjs
