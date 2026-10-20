@@ -19,3 +19,13 @@ test('missing allocation receipt gives null VRAM',()=>{const x=fixture();delete 
 test('wrong memory model gives null VRAM',()=>{const x=fixture();x.evidence.memory.modelId='other';assert.equal(project(x).allocatedVramBytes,null)});
 test('memory verifier rejection gives null VRAM',()=>{const x=fixture();x.verifyAllocation=()=>false;assert.equal(project(x).allocatedVramBytes,null)});
 test('complete synthetic callback admission is not real PASS or native OS GPU',()=>{const v=project(fixture());assert.equal(v.status,'EVIDENCE_CALLBACK_ACCEPTED');assert.equal(v.osNativeAdapter,false);assert.equal(v.modelId,'gemma4-e4b');assert.equal(v.allocatedVramBytes,123456)});
+
+test('diagnostic physical GPU identity is immutable in accepted and unverified projections',()=>{
+ for(const accepted of [false,true]){
+  const x=fixture();if(!accepted)delete x.claim;
+  const r=project(x);
+  assert.equal(Object.isFrozen(r.physicalGpu),true);
+  assert.throws(()=>{r.physicalGpu.name='spoofed';},TypeError);
+  assert.equal(r.physicalGpu.name,'NVIDIA RTX 5060');
+ }
+});
