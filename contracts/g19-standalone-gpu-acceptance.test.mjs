@@ -1,0 +1,10 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {assessStandaloneGpu as assess} from './g19-standalone-gpu-acceptance.mjs';
+const web={leewayDispatcher:{realGpuRun:true,resultCompared:true,cpuFallbackUsed:false},backend:{api:'WebGPU',physicalAdapter:'Intel Xe-LPG',hardwareBacked:true}};
+test('actual LeeWay WebGPU component may pass without separate OS adapter',()=>{const x=assess(web);assert.equal(x.componentInterface,'PASS');assert.equal(x.standaloneGpu,'NOT_VERIFIED');assert.ok(x.standaloneBlockers.includes('LEEWAY_OS_ADAPTER_ENUMERATION_MISSING'))});
+test('Adreno hardware kernel alone cannot qualify LeeWay dispatcher',()=>{const x=assess({backend:{api:'Vulkan',physicalAdapter:'Adreno 750',hardwareBacked:true}});assert.equal(x.componentInterface,'BLOCKED')});
+test('CPU fallback makes component gate fail',()=>{const x=assess({...web,leewayDispatcher:{...web.leewayDispatcher,cpuFallbackUsed:true}});assert.equal(x.componentInterface,'BLOCKED')});
+test('without native LeeWay provider installed standalone fails',()=>{const x=assess({...web,osAdapter:{isSeparatelyEnumerated:true,stableIdentifier:'candidate',submittedThroughLeeWayAdapter:true,readbackMatched:true}});assert.ok(x.standaloneBlockers.includes('LEEWAY_OWN_PROVIDER_MISSING'))});
+test('provider metadata alone cannot substitute native driver qualification',()=>{const x=assess({...web,provider:{leeWayOwned:true,loadedAndBound:true,binaryDigest:'a'.repeat(64)}});assert.ok(x.standaloneBlockers.includes('NATIVE_DRIVER_OR_ICD_QUALIFICATION_MISSING'))});
+test('full asserted inputs are still only ready for independent acceptance',()=>{const x=assess({...web,osAdapter:{isSeparatelyEnumerated:true,stableIdentifier:'leeway-test',submittedThroughLeeWayAdapter:true,readbackMatched:true},provider:{leeWayOwned:true,loadedAndBound:true,binaryDigest:'b'.repeat(64),nativeDriverOrIcdQualified:true},authority:{requestScopedFormulaAndRuntime:true,canonicalVeritasReceipt:true}});assert.equal(x.standaloneGpu,'READY_FOR_INDEPENDENT_ACCEPTANCE');assert.equal(x.isOsNativeStandaloneGpuVerified,false)});

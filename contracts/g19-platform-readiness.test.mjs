@@ -1,0 +1,13 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {assessG19Readiness as inspect} from './g19-platform-readiness.mjs';
+const digest='ab'.repeat(32);
+const good=(platform='WINDOWS')=>({platform,deviceId:'device-1',physicalGpu:{name:'Physical GPU',manufacturer:'Vendor'},nativeBuild:{wdkPresent:true},compute:{vulkanLibraryPresent:true,dispatchReadbackVerified:true,cpuFallbackUsed:false},model:{id:'model',digest,executionDeviceId:'device-1',inventorySource:'DEVICE_LOCAL_APP'},authority:Object.fromEntries(['formula','runtimeFabric','deviceBridge','ldwmd','continuum','veritas'].map(x=>[x,{verified:true,receiptId:x+'-receipt'}])),diagnostics:{deviceId:'device-1',observationId:'o1'},digitalBrain:{observationId:'o1'},veritas:{canonicalVerified:true,receiptId:'receipt',deviceId:'device-1',modelDigest:digest}});
+test('Windows WDK missing is blocked',()=>{const x=good();x.nativeBuild.wdkPresent=false;assert.ok(inspect(x).blockers.includes('WINDOWS_WDK_MISSING'))});
+test('Android paired PC model never counts as phone-local',()=>{const x=good('ANDROID');x.model.inventorySource='PAIRED_PC';assert.ok(inspect(x).blockers.includes('PHONE_MODEL_REMOTE_NOT_LOCAL'))});
+test('Android Vulkan library absent blocks',()=>{const x=good('ANDROID');x.compute.vulkanLibraryPresent=false;assert.ok(inspect(x).blockers.includes('ANDROID_VULKAN_NOT_DETECTED'))});
+test('GPU readback without inference cannot pass',()=>{const x=good();x.compute.dispatchReadbackVerified=false;assert.ok(inspect(x).blockers.includes('GPU_MODEL_EXECUTION_UNVERIFIED'))});
+test('missing runtime grant remains blocked',()=>{const x=good();x.authority.runtimeFabric.verified=false;assert.ok(inspect(x).blockers.includes('CANONICAL_AUTHORITY_UNBOUND'))});
+test('different digital brain observation remains blocked',()=>{const x=good();x.digitalBrain.observationId='other';assert.ok(inspect(x).blockers.includes('BRAIN_DIAGNOSTICS_UNBOUND'))});
+test('missing canonical receipt remains blocked',()=>{const x=good();x.veritas.canonicalVerified=false;assert.ok(inspect(x).blockers.includes('CANONICAL_GPU_VERITAS_UNVERIFIED'))});
+test('even all caller-claimed green flags never become qualified PASS',()=>{const x=inspect(good());assert.equal(x.status,'READY_FOR_INDEPENDENT_ACCEPTANCE');assert.equal(x.qualifiedInference,false);assert.equal(x.osNativeLeeWayGpu,false)});
