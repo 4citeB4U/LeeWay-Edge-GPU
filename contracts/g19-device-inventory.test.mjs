@@ -1,0 +1,10 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {inventoryWindowsVideoControllers as win,inventoryAndroidGraphics as android} from './g19-device-inventory.mjs';
+test('Win32 reports GPUs without trusting AdapterRAM as real VRAM',()=>{const x=win([{Name:'NVIDIA RTX 5060',DriverVersion:'32.0',AdapterRAM:4293918720}]);assert.equal(x.length,1);assert.equal(x[0].adapterRamReportedBytes,null);assert.equal(x[0].modelInferenceQualified,false)});
+test('Windows empty name rejected from inventory',()=>assert.equal(win([{Name:''}]).length,0));
+test('Windows malformed payload fails',()=>assert.throws(()=>win({}),/REQUIRED/));
+test('Adreno discovered from observed GLES string',()=>{const x=android({model:'SM-F956U',egl:'adreno',vulkanLibraryPresent:true,androidSdk:'37',glesInfo:'GLES: Qualcomm, Adreno (TM) 750, OpenGL ES'});assert.equal(x.physicalGpuName,'Adreno 750');assert.equal(x.vulkanComputeVerified,false);assert.equal(x.modelLocalityVerified,false)});
+test('Vulkan library is not execution proof',()=>{const x=android({model:'SM-F956U',egl:'adreno',vulkanLibraryPresent:true});assert.equal(x.modelInferenceQualified,false)});
+test('unknown Android GPU remains unknown',()=>assert.equal(android({model:'device',egl:'unknown'}).physicalGpuName,null));
+test('missing device identity fails',()=>assert.throws(()=>android({model:'',egl:'adreno'}),/REQUIRED/));

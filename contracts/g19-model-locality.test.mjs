@@ -1,0 +1,15 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {admitLocalModelClaim} from './g19-model-locality.mjs';
+const h='a1'.repeat(32),d='b2'.repeat(32);
+const c=()=>({deviceId:'fold6',executionDeviceId:'fold6',modelId:'test-model',runtime:'android-local',inventorySource:'DEVICE_LOCAL_APP',executionSource:'DEVICE_LOCAL_RUNTIME',artifactDigest:d,runtimeEvidenceId:'runtime-1',deviceModelObservationId:'obs-1',observationSubjectId:'fold6',localityEvidence:{receiptId:'runtime-1',sha256:h,deviceId:'fold6',modelId:'test-model',artifactDigest:d,runtime:'android-local',observationId:'obs-1'}});
+test('reject paired Windows inventory',()=>{const x=c();x.inventorySource='PAIRED_PC';assert.throws(()=>admitLocalModelClaim(x),/MODEL_SOURCE_NOT_ALLOWLISTED/)});
+test('reject device mismatch',()=>{const x=c();x.executionDeviceId='pc-primary';assert.throws(()=>admitLocalModelClaim(x),/REMOTE_MODEL_NOT_DEVICE_LOCAL/)});
+test('reject missing digest',()=>{const x=c();delete x.artifactDigest;assert.throws(()=>admitLocalModelClaim(x),/MODEL_ARTIFACT_DIGEST_REQUIRED/)});
+test('reject missing runtime receipt',()=>{const x=c();delete x.runtimeEvidenceId;assert.throws(()=>admitLocalModelClaim(x),/MODEL_OBSERVATION_SUBJECT_MISMATCH/)});
+test('reject fake source label',()=>{const x=c();x.inventorySource='I_SAY_LOCAL';assert.throws(()=>admitLocalModelClaim(x),/MODEL_SOURCE_NOT_ALLOWLISTED/)});
+test('reject pc observation subject on Fold6',()=>{const x=c();x.observationSubjectId='pc-primary';assert.throws(()=>admitLocalModelClaim(x),/MODEL_OBSERVATION_SUBJECT_MISMATCH/)});
+test('reject repeating digest placeholder',()=>{const x=c();x.artifactDigest='0'.repeat(64);assert.throws(()=>admitLocalModelClaim(x),/MODEL_ARTIFACT_DIGEST_REQUIRED/)});
+test('reject fabricated receipt metadata',()=>{const x=c();x.localityEvidence.modelId='other';assert.throws(()=>admitLocalModelClaim(x,()=>true),/MODEL_LOCALITY_RECEIPT_REQUIRED/)});
+test('reject self-assertion without external verifier',()=>assert.throws(()=>admitLocalModelClaim(c()),/MODEL_LOCALITY_INDEPENDENT_VERIFICATION_REQUIRED/));
+test('admit only independently callback-verified claim; do not claim GPU inference',()=>{const x=c();const r=admitLocalModelClaim(x,(kind,e)=>kind==='deviceLocalModel'&&e.deviceId==='fold6');assert.equal(r.modelId,'test-model');assert.equal(r.artifactDigest,d);assert.match(r.locality,/NOT_GPU_EXECUTION_VERIFIED/)});
