@@ -9,7 +9,7 @@ export function verifyGpuReceipt({receipt, trustedIssuerPublicKeyPem, expected} 
   if (receipt.issuer !== 'CANONICAL_LEEWAY_VERITAS' || receipt.result !== 'PASS' || receipt.cpuFallbackUsed !== false || receipt.providerId !== 'LeeWay Edge GPU') throw Error('GPU_VERITAS_SCOPE_REJECTED');
   for (const field of fields) if (!str(receipt[field])) throw Error('GPU_VERITAS_FIELD_REQUIRED:'+field);
   if (![receipt.modelDigest,receipt.commandDigest,receipt.outputDigest].every(sha)) throw Error('GPU_VERITAS_HASH_REQUIRED');
-  for (const field of ['deviceId','observationId','modelId','modelDigest','runtimeId','physicalGpu','providerId']) if (!str(expected[field]) || expected[field] !== receipt[field]) throw Error('GPU_VERITAS_SUBJECT_MISMATCH:'+field);
+  for (const field of ['deviceId','observationId','modelId','modelDigest','runtimeId','physicalGpu','providerId','commandDigest','outputDigest']) if (!str(expected[field]) || expected[field] !== receipt[field]) throw Error('GPU_VERITAS_SUBJECT_MISMATCH:'+field);
   if (!str(receipt.signature) || !/^[A-Za-z0-9+/]+={0,2}$/.test(receipt.signature)) throw Error('GPU_VERITAS_SIGNATURE_REQUIRED');
   const payload = Object.fromEntries([...fields,'issuer','result','cpuFallbackUsed'].map(k=>[k,receipt[k]]));
   let ok = false;

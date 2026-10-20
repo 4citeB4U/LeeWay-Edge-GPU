@@ -11,3 +11,10 @@ test('LeeWay route requires genuine request grant',()=>assert.ok(qualifyRun({...
 test('both actual runs required before speed ratio',()=>assert.equal(compareRuns({...run,completed:false},governed).comparable,false));
 test('binary mismatch invalidates comparison',()=>assert.equal(compareRuns(run,{...governed,engineBinarySha256:'cd'.repeat(32)}).reason,'RUNTIME_BINARY_DIFFERENCE'));
 test('synthetic fully-qualified pair yields only candidate comparison, not canonical proof',()=>{const r=compareRuns(run,governed);assert.equal(r.comparable,true);assert.equal(r.independentVerificationRequired,true);assert.equal(qualifyRun(run).verifiedPhysicalGpuModelInference,false)});
+
+test('different generated token workloads cannot yield a raw latency ratio',()=>{
+ const x=compareRuns({...run,generatedTokens:1},{...governed,generatedTokens:48});
+ assert.equal(x.comparable,false);
+ assert.equal(x.reason,'GENERATED_TOKEN_COUNT_MISMATCH');
+ assert.equal(x.generationSpeedRatio,undefined);
+});

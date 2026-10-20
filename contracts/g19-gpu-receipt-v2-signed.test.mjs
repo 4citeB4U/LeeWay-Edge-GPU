@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import {generateKeyPairSync,sign} from 'node:crypto';
 import {verifyGpuReceiptV2 as verify} from './g19-gpu-receipt-v2.mjs';
 const kp=generateKeyPairSync('ed25519'),H='ab'.repeat(32),time=100000;
-const identity='requestId sessionId requestHash modelSha256 tokenizerSha256 implementationSha256 resultHash leaseId formulaReceiptSha256 ldWmdReceiptSha256 continuumReceiptSha256 postReceiptSha256'.split(' ');
-function fixture(){const b=Object.fromEntries(identity.map(k=>[k,k.endsWith('Hash')||k.toLowerCase().includes('sha256')?H:k+'-1']));const subject={...b,deviceId:'pc',observationId:'ob-1',adapterId:'dxgi-1',physicalGpuManufacturer:'NVIDIA',physicalGpuSource:'DXGI',modelId:'gemma4',runtimeId:'wgsl',providerId:'LeeWay Edge GPU',cpuFallbackUsed:false,commandDigest:H,outputDigest:H};const authority=Object.fromEntries('formulaReceiptId runtimeFabricReceiptId ldwmdReceiptId continuumReceiptId deviceBridgeReceiptId'.split(' ').map(k=>[k,k+'-1']));const envelope={schema:'LEEWAY.GPU.VERITAS.v2',algorithm:'Ed25519',issuer:'CANONICAL_LEEWAY_VERITAS',keyId:'test',receiptId:'r1',issuedAtMs:time-100,expiresAtMs:time+100,status:'PASS',subject,authority};const msg=JSON.stringify({domain:'LEEWAY.GPU.VERITAS.v2',...envelope});envelope.signature=sign(null,Buffer.from(msg),kp.privateKey).toString('base64');const expected=Object.fromEntries('deviceId observationId adapterId physicalGpuManufacturer physicalGpuSource requestId sessionId modelId modelSha256 runtimeId'.split(' ').map(k=>[k,subject[k]]));return {envelope,expected,executionBinding:b,trustedKeys:{test:kp.publicKey.export({type:'spki',format:'pem'})},verifyUpstream:()=>true,admitReplay:()=>true,now:time};}
+const identity='requestId sessionId requestHash modelSha256 tokenizerSha256 implementationSha256 resultHash leaseId formulaReceiptSha256 ldWmdReceiptSha256 continuumReceiptSha256 postReceiptSha256 commandDigest outputDigest'.split(' ');
+function fixture(){const b=Object.fromEntries(identity.map(k=>[k,k.endsWith('Hash')||k.endsWith('Digest')||k.toLowerCase().includes('sha256')?H:k+'-1']));const subject={...b,deviceId:'pc',observationId:'ob-1',adapterId:'dxgi-1',physicalGpuManufacturer:'NVIDIA',physicalGpuSource:'DXGI',modelId:'gemma4',runtimeId:'wgsl',providerId:'LeeWay Edge GPU',cpuFallbackUsed:false,commandDigest:H,outputDigest:H};const authority=Object.fromEntries('formulaReceiptId runtimeFabricReceiptId ldwmdReceiptId continuumReceiptId deviceBridgeReceiptId'.split(' ').map(k=>[k,k+'-1']));const envelope={schema:'LEEWAY.GPU.VERITAS.v2',algorithm:'Ed25519',issuer:'CANONICAL_LEEWAY_VERITAS',keyId:'test',receiptId:'r1',issuedAtMs:time-100,expiresAtMs:time+100,status:'PASS',subject,authority};const msg=JSON.stringify({domain:'LEEWAY.GPU.VERITAS.v2',...envelope});envelope.signature=sign(null,Buffer.from(msg),kp.privateKey).toString('base64');const expected=Object.fromEntries('deviceId observationId adapterId physicalGpuManufacturer physicalGpuSource requestId sessionId modelId modelSha256 runtimeId commandDigest outputDigest'.split(' ').map(k=>[k,subject[k]]));return {envelope,expected,executionBinding:b,trustedKeys:{test:kp.publicKey.export({type:'spki',format:'pem'})},verifyUpstream:()=>true,admitReplay:()=>true,now:time};}
 test('synthetic signed correlated receipt admitted with no canonical claim',()=>assert.match(verify(fixture()).status,/NOT_CANONICAL/));
 test('different request hash rejected',()=>{const x=fixture();x.executionBinding.requestHash='cd'.repeat(32);assert.throws(()=>verify(x),/BINDING_MISMATCH/)});
 test('different tokenizer rejected',()=>{const x=fixture();x.envelope.subject.tokenizerSha256='cd'.repeat(32);assert.throws(()=>verify(x),/BINDING_MISMATCH/)});
@@ -35,4 +35,13 @@ test('tampered signatures cannot consume the durable replay identifier',()=>{
 test('host replay callback is mandatory even with a valid signature',()=>{
  const x=fixture();delete x.admitReplay;
  assert.throws(()=>verify(x),/VERIFIER_UNBOUND/);
+});
+
+test('same-session signed receipt cannot cross a changed expected command digest',()=>{
+ const x=fixture();x.expected.commandDigest='cd'.repeat(32);
+ assert.throws(()=>verify(x),/EXPECTED_SUBJECT_MISMATCH:commandDigest/);
+});
+test('same-session signed receipt cannot cross a changed actual readback digest',()=>{
+ const x=fixture();x.executionBinding.outputDigest='ef'.repeat(32);
+ assert.throws(()=>verify(x),/REQUEST_BINDING_MISMATCH:outputDigest/);
 });

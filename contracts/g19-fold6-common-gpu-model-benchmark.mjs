@@ -23,5 +23,6 @@ export function compareRuns(a,b){
  const direct=qualifyRun(a,'DIRECT_HARDWARE'),leeway=qualifyRun(b,'LEEWAY_CONTROLLED');
  if(direct.status==='BLOCKED'||leeway.status==='BLOCKED')return Object.freeze({comparable:false,reason:'BOTH_REAL_GPU_RUNS_REQUIRED',directBlockers:direct.blockers,leewayBlockers:leeway.blockers});
  if(a.engineVersion!==b.engineVersion||a.engineBinarySha256!==b.engineBinarySha256)return Object.freeze({comparable:false,reason:'RUNTIME_BINARY_DIFFERENCE'});
+ if(a.generatedTokens!==b.generatedTokens)return Object.freeze({comparable:false,reason:'GENERATED_TOKEN_COUNT_MISMATCH'});
  return Object.freeze({comparable:true,generationSpeedRatio:a.generationMs/b.generationMs,deltaMs:b.generationMs-a.generationMs,independentVerificationRequired:true});
 }
