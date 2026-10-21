@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {BENCHMARK,qualifyRun,compareRuns} from './g19-fold6-common-gpu-model-benchmark.mjs';
-const run={device:BENCHMARK.device,modelId:BENCHMARK.modelId,modelSha256:BENCHMARK.sha256,modelSizeBytes:BENCHMARK.sizeBytes,prompt:BENCHMARK.prompt,context:BENCHMARK.context,predict:BENCHMARK.predict,temperature:BENCHMARK.temperature,seed:BENCHMARK.seed,backend:'VULKAN',gpuAdapter:'Adreno (TM) 750',hardwareGpuDispatchObserved:true,cpuOnlyFallback:false,engineVersion:'native-candidate',engineBinarySha256:'ab'.repeat(32),completed:true,response:'7 remaining.',generatedTokens:5,generationMs:1000,leewayDispatcherUsed:false};
+const run={device:BENCHMARK.device,modelId:BENCHMARK.modelId,modelSha256:BENCHMARK.sha256,modelSizeBytes:BENCHMARK.sizeBytes,prompt:BENCHMARK.prompt,context:BENCHMARK.context,predict:BENCHMARK.predict,temperature:BENCHMARK.temperature,seed:BENCHMARK.seed,backend:'VULKAN',gpuAdapter:'Adreno (TM) 750',gpuOffloadLayers:BENCHMARK.gpuOffloadLayers,hardwareGpuDispatchObserved:true,cpuOnlyFallback:false,engineVersion:'native-candidate',engineBinarySha256:'ab'.repeat(32),completed:true,response:'7 remaining.',generatedTokens:5,generationMs:1000,leewayDispatcherUsed:false};
 const governed={...run,leewayDispatcherUsed:true,requestScopedRuntimeGrantVerified:true,runtimeReceiptId:'receipt-example',generationMs:1100};
 test('missing GPU generation cannot be called successful',()=>{let r=qualifyRun({...run,completed:false,response:''});assert.equal(r.status,'BLOCKED');assert.ok(r.blockers.includes('NO_COMPLETED_GENERATION'))});
 test('Vulkan physical Adreno GPU evidence required',()=>{let r=qualifyRun({...run,backend:'CPU'});assert.ok(r.blockers.includes('PHYSICAL_GPU_NOT_ATTESTED'))});
@@ -17,4 +17,12 @@ test('different generated token workloads cannot yield a raw latency ratio',()=>
  assert.equal(x.comparable,false);
  assert.equal(x.reason,'GENERATED_TOKEN_COUNT_MISMATCH');
  assert.equal(x.generationSpeedRatio,undefined);
+});
+
+test('benchmark requires exactly 99 actual reported offloaded layers',()=>{
+ for(const n of [undefined,0,32,98]){
+  const candidate={...run,gpuOffloadLayers:n};
+  assert.ok(qualifyRun(candidate).blockers.includes('GPU_OFFLOAD_CONFIGURATION_MISMATCH'));
+  assert.equal(compareRuns(candidate,governed).comparable,false);
+ }
 });

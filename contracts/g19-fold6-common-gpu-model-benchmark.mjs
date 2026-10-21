@@ -13,6 +13,7 @@ export function qualifyRun(e={},route='DIRECT_HARDWARE'){
  req('DEVICE_MISMATCH',e.device==='SM-F956U');
  req('PROMPT_OR_SAMPLER_MISMATCH',e.prompt===BENCHMARK.prompt&&e.context===BENCHMARK.context&&e.predict===BENCHMARK.predict&&e.temperature===BENCHMARK.temperature&&e.seed===BENCHMARK.seed);
  req('PHYSICAL_GPU_NOT_ATTESTED',e.backend==='VULKAN'&&e.gpuAdapter?.includes('Adreno')&&e.hardwareGpuDispatchObserved===true&&e.cpuOnlyFallback===false);
+ req('GPU_OFFLOAD_CONFIGURATION_MISMATCH',e.gpuOffloadLayers===BENCHMARK.gpuOffloadLayers);
  req('NATIVE_ENGINE_UNQUALIFIED',t(e.engineVersion)&&hash(e.engineBinarySha256));
  req('NO_COMPLETED_GENERATION',e.completed===true&&t(e.response)&&Number.isInteger(e.generatedTokens)&&e.generatedTokens>0&&Number.isFinite(e.generationMs)&&e.generationMs>0);
  if(route==='DIRECT_HARDWARE')req('LEEWAY_PRESENT_IN_DIRECT_CONTROL',e.leewayDispatcherUsed===false);
