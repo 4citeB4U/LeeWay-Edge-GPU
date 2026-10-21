@@ -1,0 +1,31 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {projectG19Diagnostics as project} from './g19-diagnostics-projection.mjs';
+const digest='ab'.repeat(32), hash='cd'.repeat(32);
+const fixture=()=>{const deviceId='pc-primary',physicalGpu={name:'NVIDIA RTX 5060',manufacturer:'NVIDIA',observationSource:'WIN32_PNP'},model={id:'gemma4-e4b',name:'gemma4:e4b',digest};const subject={deviceId,observationId:'obs-a',modelId:model.id,modelDigest:digest,physicalGpuName:physicalGpu.name,physicalGpuManufacturer:physicalGpu.manufacturer,physicalGpuSource:physicalGpu.observationSource};return {deviceId,physicalGpu,model,claim:{deviceId,executionDeviceId:deviceId,modelId:model.id,artifactDigest:digest,observationId:'obs-a',physicalGpuName:physicalGpu.name,physicalGpuManufacturer:physicalGpu.manufacturer,physicalGpuSource:physicalGpu.observationSource,gpuCommandsVerified:true,inferenceOutputVerified:true,cpuFallbackUsed:false,allocatedVramBytes:123456},authorization:{formula:true,runtimeFabric:true,deviceBridge:true,ldwmd:true,continuum:true,veritas:true},evidence:{...subject,receiptId:'exec-r1',result:'PASS',hardware:{...subject,receiptId:'hw-r1',sha256:hash},memory:{...subject,allocationId:'a1',leaseId:'l1',receiptId:'mem-r1',sha256:hash,observedAt:'2026-10-16T21:00:00Z',source:'LDWMD',allocatedBytes:123456,capacityBytes:400000}},verifyReceipt:()=>true,verifyHardware:()=>true,verifyAllocation:()=>true};};
+test('no claim remains unverified',()=>{const x=fixture();delete x.claim;assert.equal(project(x).status,'UNVERIFIED')});
+test('absent model ID never accepted',()=>{const x=fixture();delete x.model.id;delete x.claim.modelId;delete x.evidence.modelId;assert.equal(project(x).status,'UNVERIFIED')});
+test('missing authoritative runtime grant blocks',()=>{const x=fixture();x.authorization.runtimeFabric=false;assert.equal(project(x).status,'UNVERIFIED')});
+test('CPU fallback blocks',()=>{const x=fixture();x.claim.cpuFallbackUsed=true;assert.equal(project(x).status,'UNVERIFIED')});
+test('hardware source alteration blocks',()=>{const x=fixture();x.physicalGpu.observationSource='INVENTED';assert.equal(project(x).status,'UNVERIFIED')});
+test('hardware manufacturer alteration blocks',()=>{const x=fixture();x.physicalGpu.manufacturer='INVENTED';assert.equal(project(x).status,'UNVERIFIED')});
+test('missing hardware verifier blocks',()=>{const x=fixture();delete x.verifyHardware;assert.equal(project(x).status,'UNVERIFIED')});
+test('hardware verifier must accept exact source',()=>{const x=fixture();x.verifyHardware=()=>false;assert.equal(project(x).status,'UNVERIFIED')});
+test('receipt callback must accept complete subject',()=>{const x=fixture();x.verifyReceipt=()=>false;assert.equal(project(x).status,'UNVERIFIED')});
+test('missing memory verifier gives null VRAM',()=>{const x=fixture();delete x.verifyAllocation;assert.equal(project(x).allocatedVramBytes,null)});
+test('arbitrary VRAM count cannot be displayed',()=>{const x=fixture();x.claim.allocatedVramBytes=999999999;assert.equal(project(x).allocatedVramBytes,null)});
+test('allocation exceeding capacity gives null VRAM',()=>{const x=fixture();x.evidence.memory.allocatedBytes=999999999;assert.equal(project(x).allocatedVramBytes,null)});
+test('missing allocation receipt gives null VRAM',()=>{const x=fixture();delete x.evidence.memory.leaseId;assert.equal(project(x).allocatedVramBytes,null)});
+test('wrong memory model gives null VRAM',()=>{const x=fixture();x.evidence.memory.modelId='other';assert.equal(project(x).allocatedVramBytes,null)});
+test('memory verifier rejection gives null VRAM',()=>{const x=fixture();x.verifyAllocation=()=>false;assert.equal(project(x).allocatedVramBytes,null)});
+test('complete synthetic callback admission is not real PASS or native OS GPU',()=>{const v=project(fixture());assert.equal(v.status,'EVIDENCE_CALLBACK_ACCEPTED');assert.equal(v.osNativeAdapter,false);assert.equal(v.modelId,'gemma4-e4b');assert.equal(v.allocatedVramBytes,123456)});
+
+test('diagnostic physical GPU identity is immutable in accepted and unverified projections',()=>{
+ for(const accepted of [false,true]){
+  const x=fixture();if(!accepted)delete x.claim;
+  const r=project(x);
+  assert.equal(Object.isFrozen(r.physicalGpu),true);
+  assert.throws(()=>{r.physicalGpu.name='spoofed';},TypeError);
+  assert.equal(r.physicalGpu.name,'NVIDIA RTX 5060');
+ }
+});
