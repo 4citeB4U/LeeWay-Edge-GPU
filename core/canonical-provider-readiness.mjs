@@ -44,7 +44,10 @@ export function assessCanonicalSoftwareReadiness(data={}) {
   failure(blockers,'FORMULA_GOLDEN_HEALTH_NOT_VERIFIED',
     formula.httpStatus===200 && formula.body?.status==='LEEWAY_FORMULA_V1_PASS' &&
     formula.body?.goldenVectorPass===true);
-  failure(blockers,'RUNTIME_KERNEL_UNHEALTHY', kernel.httpStatus===200);
+  // Port 4002 is an older Runtime Kernel, not automatically the canonical
+  // software GPU provider. Only require it after source-verified dependency mapping.
+  if(data.kernelDependency?.canonicalSoftwareGpuBindingVerified===true)
+    failure(blockers,'BOUND_RUNTIME_KERNEL_UNHEALTHY',kernel.httpStatus===200);
   failure(blockers,'RECEIPT_CHAIN_NOT_HEALTHY',
     receipt.httpStatus===200 && receipt.body?.status==='LEEWAY_RECEIPT_LEDGER_PASS' &&
     receipt.body?.verification?.valid===true);
@@ -89,6 +92,7 @@ export function assessCanonicalSoftwareReadiness(data={}) {
     observations:{
       formulaHttpStatus:formula.httpStatus??null,
       runtimeKernelHttpStatus:kernel.httpStatus??null,
+      runtimeKernelMandatory:data.kernelDependency?.canonicalSoftwareGpuBindingVerified===true,
       receiptHttpStatus:receipt.httpStatus??null,
       gpuServiceHttpStatus:gpu.httpStatus??null,
       gpuServiceMode:gpu.body?.effectiveMode??null,

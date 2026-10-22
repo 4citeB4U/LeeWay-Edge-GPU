@@ -79,3 +79,21 @@ test('runtime probe refuses a non-absolute root rather than searching arbitrary 
   await assert.rejects(probeCanonicalSoftwarePipeline({runtimeRoot:'../not-a-runtime'}),
     /G24_CANONICAL_RUNTIME_ROOT_REQUIRED/);
 });
+
+test('legacy kernel HTTP 500 is observed but not a mandatory GPU dependency',()=>{
+  const data=passing();
+  data.kernel={httpStatus:500,body:{ok:false,error:'disk I/O error'}};
+  const result=assessCanonicalSoftwareReadiness(data);
+  assert.deepEqual(result.advisoryBlockers,[]);
+  assert.equal(result.observations.runtimeKernelHttpStatus,500);
+  assert.equal(result.observations.runtimeKernelMandatory,false);
+  assert.equal(result.productionAdmissionAuthorized,false);
+});
+test('an explicitly source-qualified required kernel would be fail-closed on HTTP 500',()=>{
+  const data=passing();
+  data.kernel={httpStatus:500};
+  data.kernelDependency={canonicalSoftwareGpuBindingVerified:true};
+  const result=assessCanonicalSoftwareReadiness(data);
+  assert.deepEqual(result.advisoryBlockers,['BOUND_RUNTIME_KERNEL_UNHEALTHY']);
+  assert.equal(result.observations.runtimeKernelMandatory,true);
+});

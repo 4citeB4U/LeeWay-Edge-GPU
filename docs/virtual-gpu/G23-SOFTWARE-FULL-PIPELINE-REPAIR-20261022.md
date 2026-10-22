@@ -111,3 +111,23 @@ node scripts/probe-standalone-pipeline.mjs --runtime-root "E:\LeeWay-Work\pc-con
 CLI exit status: 2 = observed live blockers, 3 = inventory checks green but
 still NOT production-authorized, 1 = observer error, 64 = invalid arguments.
 The CLI is not a standalone GPU execution command or bypass.
+
+## G24 diagnostic correction: port 4002 provenance
+
+Read-only process and source inspection traced port 4002 to the **older**
+E:\Leeway-Ecosystem v2.1.4\Leeway Runtime Fabric\runtime-kernel\
+service, not the active C3 software authority under
+E:\LeeWay-Work\pc-consciousness-live\runtime\automation-runtime\.
+That older source's capability table does not register a software GPU.
+Its /health raises SQLite "disk I/O error" while querying kernel stats;
+the SQLite database was observed NTFS-compressed. Compression is not an
+established root cause. No database repairs, deletes, journal resets or
+restarts were attempted.
+
+G24 records this HTTP 500 as an independent service diagnostic.
+**It is no longer a blocking prerequisite for software GPU admission unless
+a separately source-verified canonical GPU dependency specifically binds
+that kernel.** Missing authentic Runtime Fabric issuer, Formula workload
+policy, LDWMD host lease, independent Veritas, Continuum and ledgers
+remain substantive blockers. This corrects a previously overly broad
+G24 readiness assumption without bypassing any canonical provider.
