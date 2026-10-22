@@ -6,9 +6,11 @@ on:
       - 'contracts/**'
       - 'core/governed-software-compute.mjs'
       - 'core/canonical-provider-readiness.mjs'
+      - 'core/canonical-formula-software-observation.mjs'
       - 'fallback/**'
       - 'dispatch/tensor-contract.mjs'
       - 'tests/virtual-gpu/**'
+      - 'scripts/run-g26-formula-observation.mjs'
       - '.github/workflows/g19-device-evidence-contracts.yml'
   push:
     branches: [main]
@@ -16,9 +18,11 @@ on:
       - 'contracts/**'
       - 'core/governed-software-compute.mjs'
       - 'core/canonical-provider-readiness.mjs'
+      - 'core/canonical-formula-software-observation.mjs'
       - 'fallback/**'
       - 'dispatch/tensor-contract.mjs'
       - 'tests/virtual-gpu/**'
+      - 'scripts/run-g26-formula-observation.mjs'
       - '.github/workflows/g19-device-evidence-contracts.yml'
 
 permissions:
@@ -47,4 +51,5 @@ jobs:
             tests/virtual-gpu/software-cpu-host.test.mjs \
             tests/virtual-gpu/software-square-locality.test.mjs \
             tests/virtual-gpu/governed-software-compute.test.mjs \
-            tests/virtual-gpu/canonical-provider-readiness.test.mjs
+            tests/virtual-gpu/canonical-provider-readiness.test.mjs \
+            tests/virtual-gpu/canonical-formula-software-observation.test.mjs
