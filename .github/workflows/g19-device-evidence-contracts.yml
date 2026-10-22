@@ -31,6 +31,10 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+      - name: Hydrate only the package manifest from Git LFS
+        run: |
+          git lfs pull --include="package.json" --exclude=""
+          node -e "const p=require('./package.json'); if(p.name!=='leeway-edge-gpu') process.exit(1)"
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
