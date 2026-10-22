@@ -4,11 +4,21 @@ on:
   pull_request:
     paths:
       - 'contracts/**'
+      - 'core/governed-software-compute.mjs'
+      - 'core/canonical-provider-readiness.mjs'
+      - 'fallback/**'
+      - 'dispatch/tensor-contract.mjs'
+      - 'tests/virtual-gpu/**'
       - '.github/workflows/g19-device-evidence-contracts.yml'
   push:
     branches: [main]
     paths:
       - 'contracts/**'
+      - 'core/governed-software-compute.mjs'
+      - 'core/canonical-provider-readiness.mjs'
+      - 'fallback/**'
+      - 'dispatch/tensor-contract.mjs'
+      - 'tests/virtual-gpu/**'
       - '.github/workflows/g19-device-evidence-contracts.yml'
 
 permissions:
@@ -27,3 +37,10 @@ jobs:
           node-version: '22'
       - name: Run source-only fail-closed contract regressions
         run: node --test contracts/*.test.mjs
+      - name: Run G22 G23 G24 software-only pipeline regressions
+        run: |
+          node --test \
+            tests/virtual-gpu/software-cpu-host.test.mjs \
+            tests/virtual-gpu/software-square-locality.test.mjs \
+            tests/virtual-gpu/governed-software-compute.test.mjs \
+            tests/virtual-gpu/canonical-provider-readiness.test.mjs

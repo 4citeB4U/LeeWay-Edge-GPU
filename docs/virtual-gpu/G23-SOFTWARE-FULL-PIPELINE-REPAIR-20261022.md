@@ -71,3 +71,43 @@ authorities with independently authenticated evidence, exactly one
 Learning Ledger event and no hardware GPU provider invocation.
 Then pursue multicore/SIMD optimizations and external OS device interfaces.
 CURRENT: G23 CONSUMER CODE AND TESTS PASS; FULL PRODUCTION ADMISSION BLOCKED.
+
+## G24 continuation — live canonical authority inventory, 2026-10-22
+
+Source work added to this same isolated GitHub branch:
+- core/canonical-provider-readiness.mjs
+- scripts/probe-standalone-pipeline.mjs
+- tests/virtual-gpu/canonical-provider-readiness.test.mjs
+- Extend existing G19 GitHub Actions workflow to test 38 software-only
+  G22/G23/G24 contracts on every relevant pull request.
+
+The probe **imports the original Runtime Fabric** C3 readiness evaluator at the
+operator-supplied absolute runtime root, hashes the source and original provider
+registry, and inspects four exact local service endpoints. It performs no
+registration, execution, memory allocation, ledger mutation or signature
+operation. The evidence is an inventory, not a source authentication
+certificate. It cannot issue production admission even if all inventory
+fields report PASS.
+
+Live read-only results at 2026-10-22T14:09:57Z:
+- Formula golden health HTTP 200; Receipt Ledger HTTP 200.
+- Runtime kernel HTTP 500; GPU service HTTP 200, mode OFF.
+- C3 readiness BLOCKED: independent Veritas and canonical Learning
+  Ledger admission provider registrations absent.
+- No qualified software-compute provider, canonical issuer grant,
+  request-specific Formula software scheduling decision, authenticated
+  HOST_RAM memory lease, durable software Continuum binding, or complete
+  Veritas PRE/POST for the software-only lane.
+- No actual independently signed fresh software-only full-chain execution.
+- Verdict BLOCKED; mutationPerformed=false; productionAdmissionAuthorized=false.
+
+G24 isolated unit test suite 7/7 PASS; existing G23/G22 31/31 PASS;
+38 total. GitHub Actions run outcomes must be checked independently after
+a branch push; local tests are not a GitHub-hosted run.
+
+Run a new read-only inventory on the authorized Windows host:
+node scripts/probe-standalone-pipeline.mjs --runtime-root "E:\LeeWay-Work\pc-consciousness-live\runtime"
+
+CLI exit status: 2 = observed live blockers, 3 = inventory checks green but
+still NOT production-authorized, 1 = observer error, 64 = invalid arguments.
+The CLI is not a standalone GPU execution command or bypass.
