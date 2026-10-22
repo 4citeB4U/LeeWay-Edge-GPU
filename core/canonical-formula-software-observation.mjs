@@ -32,7 +32,7 @@ const SUBPATH = path.join('runtime','canonical','leeway-formula','v1');
 const sha = bytes => createHash('sha256').update(bytes).digest('hex');
 const requireValue=(ok,code)=>{if(!ok)throw Object.assign(new Error(code),{code});};
 const same=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
-const ranges = Object.freeze([[0,1],[0,100000000],[0,1],[0,1],[0,1e10],[0,30000]]);
+const ranges = Object.freeze([[0,1],[0,5000000000],[0,1],[0,1],[0,1e10],[0,30000]]);
 const fetchJson=async(fetcher,url,options)=> {
   const r=await fetcher(url,{redirect:'error',signal:AbortSignal.timeout(12000),...options});
   requireValue(r?.ok===true,'G26_FORMULA_HTTP_'+String(r?.status||'UNAVAILABLE'));
@@ -48,7 +48,7 @@ export const G26_FORMULA_RANGES=ranges;
 
 /** 16 fresh measured G22 CPU-only samples. All states represent observed values. */
 export async function measureLeeWaySoftwareWindow({size=2, samples=16}={}) {
-  requireValue(Number.isInteger(size)&&size>=1&&size<=16&&samples===16,
+  requireValue(Number.isInteger(size)&&size>=1&&size<=256&&samples===16,
     'G26_OBSERVATION_DIMENSION_INVALID');
   const A=new Float32Array(size*size), B=new Float32Array(size*size);
   for(let i=0;i<A.length;i++){A[i]=((i*11)%13)-6;B[i]=((i*7)%9)-4;}

@@ -7,10 +7,12 @@ on:
       - 'core/governed-software-compute.mjs'
       - 'core/canonical-provider-readiness.mjs'
       - 'core/canonical-formula-software-observation.mjs'
+      - 'core/software-workload-policy-candidate.mjs'
       - 'fallback/**'
       - 'dispatch/tensor-contract.mjs'
       - 'tests/virtual-gpu/**'
       - 'scripts/run-g26-formula-observation.mjs'
+      - 'scripts/run-g32-software-workload-probe.mjs'
       - '.github/workflows/g19-device-evidence-contracts.yml'
   push:
     branches: [main]
@@ -19,10 +21,12 @@ on:
       - 'core/governed-software-compute.mjs'
       - 'core/canonical-provider-readiness.mjs'
       - 'core/canonical-formula-software-observation.mjs'
+      - 'core/software-workload-policy-candidate.mjs'
       - 'fallback/**'
       - 'dispatch/tensor-contract.mjs'
       - 'tests/virtual-gpu/**'
       - 'scripts/run-g26-formula-observation.mjs'
+      - 'scripts/run-g32-software-workload-probe.mjs'
       - '.github/workflows/g19-device-evidence-contracts.yml'
 
 permissions:
@@ -52,4 +56,5 @@ jobs:
             tests/virtual-gpu/software-square-locality.test.mjs \
             tests/virtual-gpu/governed-software-compute.test.mjs \
             tests/virtual-gpu/canonical-provider-readiness.test.mjs \
-            tests/virtual-gpu/canonical-formula-software-observation.test.mjs
+            tests/virtual-gpu/canonical-formula-software-observation.test.mjs \
+            tests/virtual-gpu/software-workload-policy-candidate.test.mjs
