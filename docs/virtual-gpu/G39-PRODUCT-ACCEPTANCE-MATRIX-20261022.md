@@ -175,3 +175,28 @@ state-domain counts as proof of throughput or OS virtual-adapter status.
 
 The source-acceptance matrix is the **release decision record**, not a
 license to bypass the creator's original safety and evidence authorities.
+
+## G40 amendment — original CesiumJS and Three.js mathematics recovered
+
+The G39 original matrix-compute focus omitted existing external-to-GPU
+LeeWay mathematical providers. G40 recovers and records them separately:
+`M01` genuine WGS84 geodesic / ECEF / ENU spatial mathematics in
+Leeway-Maps, `M02` Three.js Matrix4 / BufferGeometry / bounding volume /
+surface sampling in agentx23, and `M03` the earlier MC-G9 16×6 spatial
+measurement lane (SHADOW_ONLY). Their standalone library arithmetic was
+executed on Agent-Lee on 2026-10-22 but the original provider functions
+have NOT yet run through the authorized G36 LeeWay compute path.
+
+See `G40-CESIUM-THREE-MATH-REINTEGRATION-20261022.md` and companion JSON
+catalog. New M01/M02/M03 gates are **required before claiming the
+full LeeWay spatial + geometry math suite is integrated**, but are
+independent optional feature-release gates rather than a basis to
+invent new GPU hardware or falsely reject the narrower v1
+`matmul-f32` compute operation.
+
+The Golden Formula 16×6 core remains frozen. Cesium measurements and
+Three.js local mesh coordinates have different frames, semantics and
+resource costs; their output must undergo explicit unit/precision
+normalization, separate source pinning, approved Formula interpretation
+when applicable, original LDWMD accounting and signed Veritas PRE/POST
+for the same request. No library proof alone authorizes production.
