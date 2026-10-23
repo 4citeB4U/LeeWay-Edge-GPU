@@ -1,0 +1,145 @@
+name: G19 Fold6 Android Vulkan runtime (build only)
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/g19-fold6-android-vulkan.yml"
+      - "docs/virtual-gpu/G19-FOLD6-VULKAN-CI.md"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: g19-fold6-vulkan-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  android-arm64-vulkan:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - name: Checkout LeeWay reference branch (no deployment)
+        uses: actions/checkout@v4
+
+      - name: Install audited host shader build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential cmake ninja-build git pkg-config \
+            libvulkan-dev spirv-headers spirv-tools
+          # Fail closed if the audited shader compiler build is unavailable.
+          sudo apt-get install -y --no-install-recommends \
+            glslc=2023.8-1build1 libshaderc1=2023.8-1build1
+          test "$(dpkg-query -W -f='${Version}' glslc)" = "2023.8-1build1"
+          test "$(dpkg-query -W -f='${Version}' libshaderc1)" = "2023.8-1build1"
+          glslc --version
+          sha256sum "$(command -v glslc)"
+          cmake --version
+          headers_config="$(dpkg -L spirv-headers | grep '/SPIRV-HeadersConfig.cmake$' | head -n1)"
+          test -n "$headers_config"
+          echo "SPIRV_HEADERS_DIR=$(dirname "$headers_config")" >> "$GITHUB_ENV"
+          echo "SPIR-V headers config: $headers_config"
+
+      - name: Locate GitHub-hosted Android SDK
+        run: |
+          set -euo pipefail
+          : "${ANDROID_HOME:=/usr/local/lib/android/sdk}"
+          echo "ANDROID_HOME=${ANDROID_HOME}" >> "$GITHUB_ENV"
+          ls -la "${ANDROID_HOME}/cmdline-tools"
+          if [ -x "${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager" ]; then
+            echo "${ANDROID_HOME}/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
+          else
+            sdk="$(find "${ANDROID_HOME}/cmdline-tools" -type f -path '*/bin/sdkmanager' | head -n1)"
+            test -n "$sdk"
+            echo "$(dirname "$sdk")" >> "$GITHUB_PATH"
+          fi
+
+      - name: Install fixed Android NDK
+        run: |
+          set -euo pipefail
+          sdkmanager "ndk;27.2.12479018" "platforms;android-35"
+          test -f "${ANDROID_HOME}/ndk/27.2.12479018/build/cmake/android.toolchain.cmake"
+
+      - name: Fetch exact upstream llama.cpp revision
+        env:
+          LLAMA_COMMIT: c0fd78626405c6d9b934efef0ec7291fcc20e3d6
+        run: |
+          mkdir -p upstream-llama
+          git -C upstream-llama init
+          git -C upstream-llama fetch --depth 1 https://github.com/ggml-org/llama.cpp.git "${LLAMA_COMMIT}"
+          git -C upstream-llama checkout --detach FETCH_HEAD
+          test "$(git -C upstream-llama rev-parse HEAD)" = "${LLAMA_COMMIT}"
+          printf '%s\n' "${LLAMA_COMMIT}" > upstream-llama.commit
+
+      - name: Stage architecture-neutral Khronos Vulkan headers
+        run: |
+          set -euo pipefail
+          test -f /usr/include/vulkan/vulkan.hpp
+          mkdir -p build-headers/vulkan
+          cp -a /usr/include/vulkan/. build-headers/vulkan/
+          mkdir -p build-headers/spirv
+          cp -a /usr/include/spirv/. build-headers/spirv/
+          test -f build-headers/spirv/unified1/spirv.hpp
+          test -f build-headers/vulkan/vulkan.hpp
+          sha256sum build-headers/vulkan/vulkan.hpp
+
+      - name: Configure Android ARM64 target with Vulkan and host shader compiler
+        env:
+          NDK_VER: "27.2.12479018"
+        run: |
+          cmake -S upstream-llama -B build-android -G Ninja \
+            -DCMAKE_TOOLCHAIN_FILE="${ANDROID_HOME}/ndk/${NDK_VER}/build/cmake/android.toolchain.cmake" \
+            -DANDROID_ABI=arm64-v8a \
+            -DANDROID_PLATFORM=android-28 \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DGGML_NATIVE=OFF \
+            -DGGML_OPENMP=OFF \
+            -DGGML_VULKAN=ON \
+            -DCMAKE_CXX_FLAGS="-I${GITHUB_WORKSPACE}/build-headers" \
+            -DSPIRV-Headers_DIR="${SPIRV_HEADERS_DIR}" \
+            -DLLAMA_CURL=OFF \
+            -DLLAMA_BUILD_TESTS=OFF \
+            -DLLAMA_BUILD_EXAMPLES=ON
+
+      - name: Build Android llama-cli with real Vulkan backend
+        run: |
+          cmake --build build-android --target llama-cli --parallel 4
+
+      - name: Validate ARM64 ELF and package native dependencies only
+        run: |
+          set -euo pipefail
+          mkdir -p release/bin
+          test -f build-android/bin/llama-cli
+          file build-android/bin/llama-cli | tee release/elf-inspection.txt
+          readelf -h build-android/bin/llama-cli | tee -a release/elf-inspection.txt
+          grep -q 'AArch64' release/elf-inspection.txt
+          cp build-android/bin/llama-cli release/bin/
+          find build-android/bin -maxdepth 1 -type f -name '*.so*' -exec cp -L {} release/bin/ \;
+          test -f release/bin/libggml-vulkan.so
+          find release/bin -maxdepth 1 -type f -print0 | sort -z | xargs -0 sha256sum > release/SHA256SUMS
+          cp upstream-llama.commit release/
+          {
+            echo 'G19 Android arm64 Vulkan llama.cpp build-only artifact'
+            echo 'Phone deployment: NOT PERFORMED'
+            echo 'Inference: NOT EXECUTED'
+            echo 'Model weights: NOT INCLUDED'
+            echo 'Runtime: pinned upstream llama.cpp commit'
+            echo 'GPU: Vulkan backend compiled; physical Adreno execution unverified'
+            echo 'LeeWay runtime binding: NOT PERFORMED'
+          } > release/QUALIFICATION.txt
+          tar -czf g19-fold6-arm64-vulkan-build.tar.gz -C release .
+          sha256sum g19-fold6-arm64-vulkan-build.tar.gz
+
+      - name: Publish review-only build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: g19-fold6-arm64-vulkan-build
+          path: |
+            g19-fold6-arm64-vulkan-build.tar.gz
+            release/SHA256SUMS
+            release/QUALIFICATION.txt
+            release/elf-inspection.txt
+            release/upstream-llama.commit
+          retention-days: 14
+          if-no-files-found: error
