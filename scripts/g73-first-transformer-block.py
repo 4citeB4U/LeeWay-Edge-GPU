@@ -96,6 +96,7 @@ def execute(filename):
  activated=(gate/(1+np.exp(-np.clip(gate,-80,80))))*up
  down=activated@W('ffn_down.weight').T
  final=hidden+down
+ if os.environ.get('LEEWAY_BLOCK_COMPARE_DIR'): final.tofile(os.path.join(os.environ['LEEWAY_BLOCK_COMPARE_DIR'],'g73.bin'))
  # Independent PyTorch reference checks SwiGLU residual and normalization, all with same weights.
  th=torch.from_numpy(hidden.copy());tw=torch.from_numpy(ff_norm.copy())
  tr=th*torch.rsqrt(th.square().mean(-1,keepdim=True)+1e-6)*tw
