@@ -14,3 +14,7 @@
 # Runtime package and reviewed text evidence must not become LFS pointers.
 /package.json -filter diff merge text eol=lf
 /qualification/tensor-g2/*.json -filter diff merge text eol=lf
+
+# Historical source-pin checks require these original bytes on every host.
+/fallback/cpu.worker.js -filter -text
+/fallback/node-cpu.engine.mjs -filter -text

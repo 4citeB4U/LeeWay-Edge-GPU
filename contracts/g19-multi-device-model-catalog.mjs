@@ -1,10 +1,12 @@
 // G19 J-5: non-executing device-specific model inventory boundary.
 // Never admit a system component or paired-PC entry as usable device-local weights.
+import { normalizeGpuPlatform } from './gpu-platform-contract.mjs';
 const issuedCandidateRecords=new WeakSet();
 const str=x=>typeof x==='string'&&x.trim().length>0;
 const sha=x=>typeof x==='string'&&/^[a-f0-9]{64}$/i.test(x);
 export function classifyModelCandidate({deviceId,deviceKind,source,modelId,modelSha256,backend,localWeightsObserved,entrypointVerified,accessAuthorized,physicalGpuExecutionVerified}={}){
- if(!str(deviceId)||!['WINDOWS','ANDROID'].includes(deviceKind))throw Error('MODEL_DEVICE_UNBOUND');
+ if(!str(deviceId))throw Error('MODEL_DEVICE_UNBOUND');
+ try { deviceKind=normalizeGpuPlatform(deviceKind); } catch { throw Error('MODEL_DEVICE_UNBOUND'); }
  const allowed=['DEVICE_LOCAL','PAIRED_PC','SYSTEM_COMPONENT','REMOTE_API'];
  if(!allowed.includes(source))throw Error('MODEL_SOURCE_INVALID');
  const locality=source==='DEVICE_LOCAL'?'DEVICE_LOCAL_CANDIDATE':source==='PAIRED_PC'?'PAIRED_PC_REMOTE':source==='SYSTEM_COMPONENT'?'SYSTEM_COMPONENT_RESTRICTED_OR_UNKNOWN':'REMOTE_API';

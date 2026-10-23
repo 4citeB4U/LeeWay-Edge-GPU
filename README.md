@@ -1,12 +1,28 @@
-# LeeWay GPU
+# LeeWay Edge GPU
 
-**Software-defined graphics/tensor execution research — local candidate, not an installed graphics card.**
+**One standalone LeeWay GPU product for Windows, Linux, Samsung/Android, macOS, iPhone and iPad.**
 
-Creator: Leonard Lee / LeeWay Industries. Source owner: `4citeB4U/LeeWay-Edge-GPU` (edge backend engineering). The official product is **LeeWay GPU**; the Windows execution backend is **LeeWay GPU — D3D12**. The separately installed LeeWay GPU service contract is provided by Device Bridge at `127.0.0.1:4178`. This repository's candidate tensor/browser paths do not establish service dispatch, a virtual OS GPU adapter, or production readiness.
+Creator: Leonard Lee / LeeWay Industries. Source owner: `4citeB4U/LeeWay-Edge-GPU`. Product identity: `leeway.gpu.service`. Applications submit work through the existing Device Bridge GPU service and SDK. Device execution APIs are implementation adapters beneath this shared product identity.
 
-This repository is being rebuilt around real computation, explicit admission, reference-checked results, and recoverable working state. Runtime Fabric remains execution authority; the canonical LeeWay Formula remains mathematical authority. Cesium and selected Three.js/TSL capabilities are complementary integration targets, not governing layers.
+The LeeWay-owned model graph includes GGUF reading, tokenization, quantized mathematics, normalization, attention, KV state and token generation. Runtime Fabric owns authorization, Formula governs decisions, LDWMD owns active buffers, Continuum owns durable state, and Veritas plus both ledgers retain verified outcomes. Cesium and Three.js mathematics support the spatial capability plane.
 
-## Current local capability
+Agent Lee remains the LeeWay Machine Consciousness runtime identity. Models are task capabilities. Speech is delivered through the existing LeeWay Voice Fabric.
+
+**Implementation status:** the portable runtime connections are being integrated and tested. Each platform still requires its own build, real device execution and complete governed acceptance. The implemented shader graph currently supports bounded Qwen2 and Gemma4 text profiles. Qwen3 multi-token parity remains unresolved.
+
+See [portable runtime implementation](docs/virtual-gpu/PORTABLE-GPU-IMPLEMENTATION-20261023.md) for the exact architecture, source recovery, interfaces and remaining gates.
+
+## Shared application interface
+
+- `GET /v1/capabilities`: qualified provider identities and model capabilities.
+- `POST /v1/models/activate`: select an admitted local model for an authenticated client.
+- `POST /v1/generate`: execute through that client's Runtime Fabric binding.
+- `sdk/model-resource.mjs`: device-local bounded model reading through file, Blob or native storage adapters.
+- `contracts/gpu-platform-contract.mjs`: one product identity and six platform targets.
+
+The existing service receives the SDK's `createLeeWayGpuInferenceProvider` at trusted startup. Requests carry model/task data; authorization and execution providers come from the deployment. Model bytes, grants, actual LDWMD buffers, session state and results retain matching request identities. Missing authority or final audit evidence withholds output.
+
+## Retained tensor component capability
 
 The G2 candidate extends the existing WebGPU/CPU paths with:
 
@@ -19,18 +35,20 @@ The G2 candidate extends the existing WebGPU/CPU paths with:
 
 See [the G2 checkpoint](docs/virtual-gpu/TENSOR-G2-CHECKPOINT.md) and [reviewed evidence](qualification/tensor-g2/local-evidence.json) for measured results and source hashes. The earlier [G0 checkpoint](docs/virtual-gpu/LOCAL-BUILD-CHECKPOINT.md) records the execution-core repairs.
 
-## What is not claimed
+## Qualification boundaries
 
-This candidate is not a WDDM driver, Vulkan ICD, virtual PCI device, CUDA compatibility layer, Google TPU, quantum processor, or general replacement for NVIDIA hardware. It has no published cross-vendor superiority benchmark or enterprise failover SLA. A controlled release of a test-owned GPUDevice is not a physical GPU outage test.
+Standalone product acceptance covers installation, public API, lifecycle, governed computation and application use. Native operating-system GPU enumeration has its own driver/API qualification. Platform target declarations and passing contract tests cannot establish physical device execution.
 
-The tensor operation is a usable component interface, not transparent interception of arbitrary existing applications. Full Formula-directed workload routing, production LDWMD binding, Cesium/TSL composition, native driver integration, cross-platform qualification, and C3 closure remain open. No remote provider is activated by these tests.
+The current D3D12, Vulkan and Metal diagnostics retain their measured scope. Each native implementation must qualify the full operator and resource interfaces before it can execute the shared model workload. Protected production enrollment, inference-domain Formula policy, complete device buffer planning and end-to-end acceptance remain open.
 
 ## Execute locally
 
-Node.js 24 and an installed compatible Chromium browser are used by the qualification scripts. No new runtime dependency is needed for these tests.
+The portable contract suites use Node.js 22 or later; the retained local run used Node.js 24. Browser GPU qualification additionally requires a compatible installed browser. Tests use existing dependencies.
 
 ```powershell
 npm run build
+npm run test:portable
+npm run test:software
 npm run test:tensor
 npm run test:gpu -- --evidence <LOCAL_EVIDENCE_DIRECTORY>
 ```

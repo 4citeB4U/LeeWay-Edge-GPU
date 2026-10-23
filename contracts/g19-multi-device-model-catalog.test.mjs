@@ -26,3 +26,17 @@ test('even classified candidate plus self-reported owner grant is not executable
  assert.equal(r.proposalEligible,true);
  assert.equal(r.canonicalInferenceAccepted,false);
 });
+
+test('all portable product targets retain proposal-only model inventory semantics',()=>{
+ for(const deviceKind of ['WINDOWS','LINUX','ANDROID','MACOS','IOS','IPADOS']) {
+  const target=classify({...base,deviceKind});
+  assert.equal(target.deviceKind,deviceKind);
+  assert.equal(target.physicalGpuModelInferenceQualified,false);
+  const proposed=route({fromDeviceId:'fixture-source',target,ownerGrant:{requestScopedVerified:true,targetDeviceId:target.deviceId}});
+  assert.equal(proposed.proposalEligible,true);
+  assert.equal(proposed.admitted,false);
+  assert.equal(proposed.canonicalInferenceAccepted,false);
+  const cloned=JSON.parse(JSON.stringify(target));
+  assert.equal(route({fromDeviceId:'fixture-source',target:cloned,ownerGrant:{requestScopedVerified:true,targetDeviceId:cloned.deviceId}}).proposalEligible,undefined);
+ }
+});

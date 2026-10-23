@@ -1,0 +1,57 @@
+name: LeeWay GPU portable runtime contracts
+
+on:
+  pull_request:
+    paths:
+      - 'contracts/**'
+      - 'core/**'
+      - 'sdk/**'
+      - 'dispatch/**'
+      - 'buffers/**'
+      - 'pipeline/**'
+      - 'shaders/**'
+      - 'tests/virtual-gpu/**'
+      - 'package.json'
+      - '.github/workflows/portable-gpu-contracts.yml'
+  push:
+    branches: [main, 'codex/leeway-gpu-portable-core']
+    paths:
+      - 'contracts/**'
+      - 'core/**'
+      - 'sdk/**'
+      - 'dispatch/**'
+      - 'buffers/**'
+      - 'pipeline/**'
+      - 'shaders/**'
+      - 'tests/virtual-gpu/**'
+      - 'package.json'
+      - '.github/workflows/portable-gpu-contracts.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  contracts:
+    name: Contracts on ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify ordinary package manifest
+        run: node -e "const p=require('./package.json');if(p.name!=='leeway-edge-gpu')process.exit(1)"
+      - name: Portable model, platform and admission regressions
+        run: npm run test:portable
+      - name: Existing software compute guardrails
+        run: npm run test:software
+      - name: Source syntax
+        run: npm run build
+
+# These jobs validate contracts on desktop runners. They do not certify GPU
+# hardware, iOS/Android deployment, signing enrollment or production inference.

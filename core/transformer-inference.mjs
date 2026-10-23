@@ -11,10 +11,11 @@ LICENSE: MIT. Architecture math references Qwen2/Gemma4 primary implementations;
 import {ModelOperatorEncoder} from '../dispatch/model-ops.mjs';
 import {withDeviceSequence} from '../dispatch/compute.dispatch.js';
 import {HybridDispatcher,requireInferenceExecution} from './hybrid.dispatcher.js';
+import {readAdmittedModelTensor} from '../sdk/model-resource.mjs';
 const finiteInteger=(v,min,max,k)=>{if(!Number.isSafeInteger(v)||v<min||v>max)throw Error('MODEL_METADATA_INVALID:'+k);return v;};
 export class LeeWayTransformerSession{
- constructor({device,base,plan}){
-  this.device=device;this.base=base;this.plan=structuredClone(plan);plan=this.plan;this.arch=plan.metadata['general.architecture'];
+  constructor({device,base,plan,modelResource}){
+   this.device=device;this.base=base;this.modelResource=modelResource;this.plan=structuredClone(plan);plan=this.plan;this.arch=plan.metadata['general.architecture'];
   if(!['qwen2','gemma4'].includes(this.arch))throw Error('MODEL_ARCHITECTURE_UNSUPPORTED');
   this.meta=plan.metadata;this.byName=new Map(plan.tensors.map(t=>[t.name,t]));
   const get=(key)=>this.meta[this.arch+'.'+key];
@@ -70,6 +71,8 @@ export class LeeWayTransformerSession{
   const grant=await requireInferenceExecution(this.executionContext,this.plan,'BEFORE_TENSOR_READ:'+name);
   const signals=[AbortSignal.timeout(Math.max(1,Math.min(2147483647,grant.expiresAtMs-Date.now())))];
   if(this.executionContext.signal)signals.push(this.executionContext.signal);
+   if(grant.modelSource.kind==='DEVICE_LOCAL_READONLY_GGUF')return readAdmittedModelTensor({grant,resource:this.modelResource,
+    tensor:this.tensor(name),name,start,rows,signal:AbortSignal.any(signals)});
   const url=this.base+'tensor?name='+encodeURIComponent(name)+'&start='+start+'&rows='+rows;
   const response=await fetch(url,{cache:'no-store',redirect:'error',signal:AbortSignal.any(signals)});if(!response.ok)throw Error('MODEL_RANGE_READ_FAILED:'+name);
   const data=await response.arrayBuffer();const hash=[...new Uint8Array(await crypto.subtle.digest('SHA-256',data))].map(v=>v.toString(16).padStart(2,'0')).join('');
@@ -77,7 +80,10 @@ export class LeeWayTransformerSession{
  }
  async load(context){
   const grant=await requireInferenceExecution(context,this.plan,'BEFORE_WEIGHT_ALLOCATION');
-  if(this.base!==grant.modelSource.rangeBaseUrl)throw Error('MODEL_RANGE_SOURCE_NOT_ADMITTED');
+   if(grant.modelSource.kind==='DEVICE_LOCAL_READONLY_GGUF'){
+    this.modelResource??=grant.modelSource.resource;
+    if(this.modelResource!==grant.modelSource.resource)throw Error('MODEL_LOCAL_RESOURCE_NOT_ADMITTED');
+   }else if(this.modelResource||this.base!==grant.modelSource.rangeBaseUrl)throw Error('MODEL_RANGE_SOURCE_NOT_ADMITTED');
   if(this.loaded)return;
   if(this.memoryPlan.residentFloorBytes>grant.memory.budgetBytes)throw Error('MODEL_LDWMD_BUDGET_INSUFFICIENT');
   this.executionContext=context;
@@ -86,7 +92,9 @@ export class LeeWayTransformerSession{
   try{
    for(let i=0;i<this.required.length;i++){
     const name=this.required[i],t=this.tensor(name),rows=t.elements/t.shape[0],stride=t.bytes/rows;
-    const rowsPerChunk=Math.max(1,Math.min(65535,Math.floor(24*1024*1024/stride))),parts=[];
+    const chunkBudget=Math.min(24*1024*1024,grant.modelSource.maxReadBytes??24*1024*1024);
+    if(stride>chunkBudget)throw Error('MODEL_RESOURCE_ROW_EXCEEDS_READ_BUDGET');
+    const rowsPerChunk=Math.max(1,Math.min(65535,Math.floor(chunkBudget/stride))),parts=[];
     for(let row=0;row<rows;row+=rowsPerChunk){const count=Math.min(rowsPerChunk,rows-row),data=await this.range(name,row,count);if(data.byteLength!==count*stride)throw Error('MODEL_RANGE_SIZE_MISMATCH');const buffer=this.ops.upload(data);parts.push({buffer,start:row,rows:count});this.io.packedWeightBytes+=data.byteLength;await this.device.queue.onSubmittedWorkDone();}
     this.weights.set(name,{...t,parts});
     if(i%50===0||i===this.required.length-1)console.log('WEIGHTS '+(i+1)+'/'+this.required.length+' '+this.io.packedWeightBytes);
@@ -99,7 +107,7 @@ export class LeeWayTransformerSession{
    if(this.perLayer){const n=this.perLayer*this.layers;Object.assign(this.s,{pleRaw:this.ops.allocate(n*2),pleEmbedding:allocate(n),pleProjection:allocate(n),pleNorm:allocate(n),pleScaled:allocate(n),ple:allocate(n),pleGate:allocate(this.perLayer),pleActivated:allocate(this.perLayer),pleOutput:allocate(this.d)});}
    this.kv=this.graph.filter(g=>!g.shared).map(g=>({key:allocate(g.kvWidth*this.context),value:allocate(g.kvWidth*this.context)}));
    this.loaded=true;this.state='READY';this.loadMs=performance.now()-start;
-  }catch(error){this.state='FAILED';this.close();throw error;}
+   }catch(error){this.state='FAILED';await this.close();throw error;}
  }
  weight(name){const w=this.weights.get(name);if(!w)throw Error('MODEL_WEIGHT_NOT_LOADED:'+name);return w;}
  vector(name){const w=this.weight(name);if(w.type!==0||w.parts.length!==1)throw Error('MODEL_NORM_WEIGHT_MUST_BE_F32:'+name);return w.parts[0].buffer;}
@@ -196,7 +204,13 @@ export class LeeWayTransformerSession{
     externalModelEngine:false,cpuNeuralMath:false,formulaRouting:'REQUIRED_HOST_FORMULA_RECEIPT',ldWmdAllocation:'HOST_ADMITTED_LEASE_ONLY',canonicalAcceptance:'PENDING_HOST_POST_GATE',textOnly:true};
   })();
  }
- close(){this.ops?.close();this.weights.clear();this.loaded=false;this.executionContext=null;this.state='CLOSED';}
+  close(){
+   let operatorError;try{this.ops?.close();}catch(error){operatorError=error;}
+   this.weights.clear();this.loaded=false;this.executionContext=null;this.state='CLOSED';
+   const resourceClose=this.modelResource?.close();
+   if(!operatorError)return resourceClose;
+   return Promise.resolve(resourceClose).then(()=>{throw operatorError;},error=>{throw new AggregateError([operatorError,error],'MODEL_SESSION_CLEANUP_FAILED');});
+  }
 }
 export function inspectTransformerPlan(plan){
  const session=new LeeWayTransformerSession({device:null,base:null,plan});
@@ -205,9 +219,9 @@ export function inspectTransformerPlan(plan){
   requiredTensors:session.required,memory:session.memoryPlan,scope:'METADATA_PLAN_NOT_OPERATOR_OR_INFERENCE_QUALIFICATION',
   nativeOsAdapterRegistered:false};}finally{session.close();}
 }
-export async function runModel({device,base,plan,inferenceBinding,requestId,sessionId,signal}){
+export async function runModel({device,base,plan,modelResource,inferenceBinding,requestId,sessionId,signal}){
  // No diagnostic always-true controller or implicit CPU/native-server alternative exists here.
- const session=new LeeWayTransformerSession({device,base,plan});
+ const session=new LeeWayTransformerSession({device,base,plan,modelResource});
  try{
   const dispatcher=new HybridDispatcher({ml:session,inferenceBinding});
   const context={capability:'WEBGPU',signal};
@@ -215,5 +229,5 @@ export async function runModel({device,base,plan,inferenceBinding,requestId,sess
    tokenizerSha256:plan.tokenizerSha256,implementationSha256:plan.implementationSha256,
    contextLimit:plan.contextLimit,inputIds:plan.inputTokens,maxNewTokens:plan.maxNewTokens},context);
   return {...result,selectedDispatcherPath:context.executionPath};
- }finally{session.close();}
+ }finally{await session.close();}
 }

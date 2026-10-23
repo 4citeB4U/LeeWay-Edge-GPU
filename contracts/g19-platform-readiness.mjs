@@ -1,4 +1,6 @@
-// G19 J-5: independent platform readiness classification, no fabricated acceptance.
+// Historical G19 Windows/Android physical-GPU diagnostic only. This is not the
+// portable product support contract; see gpu-platform-contract.mjs. Its WDK
+// prerequisite and physical-GPU observations do not define standalone identity.
 const text=x=>typeof x==='string'&&x.trim().length>0;
 const sha=x=>typeof x==='string'&&/^[a-f0-9]{64}$/i.test(x);
 const req=['formula','runtimeFabric','deviceBridge','ldwmd','continuum','veritas'];

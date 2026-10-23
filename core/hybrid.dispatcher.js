@@ -14,6 +14,9 @@ const inferenceExecutions=new WeakMap();
 function verifyGrantedIdentity(state){
  if(state.grantedSubject!==inferenceGrantSubject(state.grant))throw new InferenceContractError('INFERENCE_GRANTED_PROVENANCE_CHANGED');
  if(state.memoryOwner!==state.grant.memory||state.acquireBuffer!==state.grant.memory.acquireBuffer||state.releaseBuffer!==state.grant.memory.releaseBuffer)throw new InferenceContractError('INFERENCE_GRANTED_PROVIDER_CHANGED');
+  if(state.sourceOwner!==state.grant.modelSource||state.resource!==state.grant.modelSource.resource||
+    state.read!==state.grant.modelSource.resource?.read||state.close!==state.grant.modelSource.resource?.close||
+    state.verifyRead!==state.grant.modelSource.verifyRead)throw new InferenceContractError('INFERENCE_GRANTED_MODEL_PROVIDER_CHANGED');
 }
 export async function requireInferenceExecution(context,plan,phase='EXECUTE'){
  const state=inferenceExecutions.get(context);
@@ -53,7 +56,9 @@ export class HybridDispatcher{
    grant=await binding.authorize(request,{requestHash,signal:ctx.signal});
    validateInferenceGrant(grant,request,requestHash);
    state={active:false,binding,request,requestHash,grant,grantedSubject:inferenceGrantSubject(grant),
-    memoryOwner:grant.memory,acquireBuffer:grant.memory.acquireBuffer,releaseBuffer:grant.memory.releaseBuffer};
+     memoryOwner:grant.memory,acquireBuffer:grant.memory.acquireBuffer,releaseBuffer:grant.memory.releaseBuffer,
+     sourceOwner:grant.modelSource,resource:grant.modelSource.resource,read:grant.modelSource.resource?.read,
+     close:grant.modelSource.resource?.close,verifyRead:grant.modelSource.verifyRead};
    const replay=await binding.verifyFormulaDecision(grant,{request,requestHash});
    validateInferenceGrant(grant,request,requestHash);verifyGrantedIdentity(state);
    state.formulaReplaySha256=await validateInferenceFormulaReplay(replay,grant,request,requestHash);
@@ -71,11 +76,17 @@ export class HybridDispatcher{
    await requireInferenceExecution(executionContext,request,'BEFORE_CONTINUUM_COMMIT');
    commitStarted=true;const commit=await binding.commit(grant,{requestHash,resultHash,result:structuredClone(preserved),postReceiptSha256:post.receiptSha256});
    if(commit?.requestHash!==requestHash||commit?.resultHash!==resultHash||commit?.sessionId!==request.sessionId||commit?.readbackVerified!==true||!isSha256(commit.receiptSha256))throw new InferenceContractError('INFERENCE_CONTINUUM_COMMIT_UNVERIFIED');
+    const auditKeys=['commitAttestationSha256','receiptLedgerReceiptSha256','learningLedgerReceiptSha256'];
+    const audit={};
+    if(auditKeys.some(key=>commit[key]!==undefined)){
+     if(auditKeys.some(key=>!isSha256(commit[key])))throw new InferenceContractError('INFERENCE_FINAL_AUDIT_EVIDENCE_INCOMPLETE');
+     for(const key of auditKeys)audit[key]=commit[key];
+    }
    await requireInferenceExecution(executionContext,request,'BEFORE_RESPONSE');
    output={...preserved,executionBinding:{requestId:request.requestId,sessionId:request.sessionId,requestHash,
     modelSha256:request.modelSha256,tokenizerSha256:request.tokenizerSha256,implementationSha256:request.implementationSha256,
     resultHash,leaseId:grant.leaseId,formulaReceiptSha256:grant.formula.receiptSha256,
-    formulaReplaySha256:state.formulaReplaySha256,ldWmdReceiptSha256:grant.memory.admissionReceiptSha256,continuumReceiptSha256:commit.receiptSha256,postReceiptSha256:post.receiptSha256},
+     formulaReplaySha256:state.formulaReplaySha256,ldWmdReceiptSha256:grant.memory.admissionReceiptSha256,continuumReceiptSha256:commit.receiptSha256,postReceiptSha256:post.receiptSha256,...audit},
     claimBoundary:'Only an independently qualified Runtime Fabric binding can establish canonical acceptance.'};
    ctx.executionPath='ML';
   }catch(error){failure=error;}

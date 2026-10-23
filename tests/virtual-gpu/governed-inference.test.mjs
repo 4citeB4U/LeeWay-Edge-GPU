@@ -110,3 +110,25 @@ for(const [field,value]of [['requestHash',K],['modelSha256',K],['mappingSha256',
 test('valid-looking Formula proof cannot carry a random digest',async()=>{const f=fixture();const original=f.binding.verifyFormulaDecision;f.binding.verifyFormulaDecision=async(...args)=>({...await original(...args),proofSha256:H});await denied(()=>f.dispatcher.dispatch(task(),{capability:'WEBGPU'}),'INFERENCE_FORMULA_REPLAY_DIGEST_MISMATCH');assert.equal(f.stats().calls,0);});
 test('revalidation cannot silently enlarge the granted memory budget',async()=>{const f=fixture(()=>{},{revalidate:async g=>{g.memory.budgetBytes*=2;return true;}});await denied(()=>f.dispatcher.dispatch(task(),{capability:'WEBGPU'}),'INFERENCE_GRANTED_PROVENANCE_CHANGED');assert.equal(f.stats().calls,0);});
 test('revalidation cannot replace the admitted buffer provider',async()=>{const f=fixture(()=>{},{revalidate:async g=>{g.memory.acquireBuffer=()=>null;return true;}});await denied(()=>f.dispatcher.dispatch(task(),{capability:'WEBGPU'}),'INFERENCE_GRANTED_PROVIDER_CHANGED');assert.equal(f.stats().calls,0);});
+
+test('revalidation cannot replace the admitted model source with a matching descriptor',async()=>{
+ const f=fixture(()=>{},{revalidate:async g=>{g.modelSource={...g.modelSource};return true;}});
+ await denied(()=>f.dispatcher.dispatch(task(),{capability:'WEBGPU'}),'INFERENCE_GRANTED_MODEL_PROVIDER_CHANGED');
+ assert.equal(f.stats().calls,0);assert.equal(f.stats().release,1);
+});
+
+test('partial final ledger evidence is rejected and rolls back',async()=>{
+ const f=fixture(()=>{},{commit:async(g,{requestHash,resultHash})=>({sessionId:g.sessionId,readbackVerified:true,
+  requestHash,resultHash,receiptSha256:H,commitAttestationSha256:J})});
+ await denied(()=>f.dispatcher.dispatch(task(),{capability:'WEBGPU'}),'INFERENCE_FINAL_AUDIT_EVIDENCE_INCOMPLETE');
+ assert(f.stats().order.includes('rollback'));assert.equal(f.stats().release,1);
+});
+
+test('complete final commit and ledger hashes are retained for the application interface',async()=>{
+ const f=fixture(()=>{},{commit:async(g,{requestHash,resultHash})=>({sessionId:g.sessionId,readbackVerified:true,
+  requestHash,resultHash,receiptSha256:H,commitAttestationSha256:J,receiptLedgerReceiptSha256:K,learningLedgerReceiptSha256:H})});
+ const result=await f.dispatcher.dispatch(task(),{capability:'WEBGPU'});
+ assert.equal(result.executionBinding.commitAttestationSha256,J);
+ assert.equal(result.executionBinding.receiptLedgerReceiptSha256,K);
+ assert.equal(result.executionBinding.learningLedgerReceiptSha256,H);
+});

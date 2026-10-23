@@ -16,6 +16,7 @@ export class InferenceContractError extends Error{
 const fail=code=>{throw new InferenceContractError(code);};
 export const isSha256=value=>typeof value==='string'&&/^[a-f0-9]{64}$/.test(value);
 const identity=value=>typeof value==='string'&&/^[A-Za-z0-9][A-Za-z0-9_.:/-]{0,159}$/.test(value);
+const modelProviders=new WeakMap();
 export async function inferenceHash(value){const bytes=new TextEncoder().encode(JSON.stringify(value));return [...new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))].map(v=>v.toString(16).padStart(2,'0')).join('');}
 export function snapshotInferenceRequest(task){
  if(task?.type!=='AI_INFERENCE')fail('INFERENCE_REQUEST_TYPE_INVALID');
@@ -41,9 +42,21 @@ export function validateInferenceGrant(grant,request,requestHash){
  if(!Number.isSafeInteger(grant.expiresAtMs)||grant.expiresAtMs<=Date.now())fail('INFERENCE_GRANT_EXPIRED');
  if(!identity(grant.leaseId))fail('INFERENCE_LEASE_ID_REQUIRED');
  const source=grant.modelSource;
- if(source?.kind!=='LOCAL_READONLY_GGUF'||source.modelSha256!==request.modelSha256||!isSha256(source.readReceiptSha256))fail('INFERENCE_LOCAL_MODEL_SOURCE_UNBOUND');
- let location;try{location=new URL(source.rangeBaseUrl);}catch{fail('INFERENCE_LOCAL_MODEL_SOURCE_UNBOUND');}
- if(!['http:','https:'].includes(location.protocol)||!['127.0.0.1','localhost','[::1]'].includes(location.hostname)||location.username||location.password||location.search||location.hash||!location.pathname.endsWith('/'))fail('INFERENCE_REMOTE_WEIGHT_SOURCE_FORBIDDEN');
+ if(!source||source.modelSha256!==request.modelSha256||!isSha256(source.readReceiptSha256))fail('INFERENCE_LOCAL_MODEL_SOURCE_UNBOUND');
+ if(modelProviders.has(grant)&&source.kind!=='DEVICE_LOCAL_READONLY_GGUF')fail('INFERENCE_MODEL_SOURCE_PROVIDER_CHANGED');
+ if(source.kind==='LOCAL_READONLY_GGUF'){
+  let location;try{location=new URL(source.rangeBaseUrl);}catch{fail('INFERENCE_LOCAL_MODEL_SOURCE_UNBOUND');}
+  if(!['http:','https:'].includes(location.protocol)||!['127.0.0.1','localhost','[::1]'].includes(location.hostname)||location.username||location.password||location.search||location.hash||!location.pathname.endsWith('/'))fail('INFERENCE_REMOTE_WEIGHT_SOURCE_FORBIDDEN');
+ }else if(source.kind==='DEVICE_LOCAL_READONLY_GGUF'){
+  const resource=source.resource;
+  if(source.requestHash!==requestHash||!identity(source.resourceId)||!Number.isSafeInteger(source.byteLength)||source.byteLength<1||
+   !Number.isSafeInteger(source.maxReadBytes)||source.maxReadBytes<1||source.maxReadBytes>128*1024*1024||
+   resource?.kind!=='LEEWAY_DEVICE_LOCAL_MODEL_RESOURCE_V1'||resource.resourceId!==source.resourceId||resource.byteLength!==source.byteLength||resource.maxReadBytes!==source.maxReadBytes||
+   typeof resource.read!=='function'||typeof resource.close!=='function'||typeof source.verifyRead!=='function'||source.rangeBaseUrl!==undefined)fail('INFERENCE_LOCAL_MODEL_RESOURCE_UNBOUND');
+  const previous=modelProviders.get(grant);
+  if(previous&&(previous.source!==source||previous.resource!==resource||previous.read!==resource.read||previous.close!==resource.close||previous.verifyRead!==source.verifyRead))fail('INFERENCE_MODEL_SOURCE_PROVIDER_CHANGED');
+  if(!previous)modelProviders.set(grant,{source,resource,read:resource.read,close:resource.close,verifyRead:source.verifyRead});
+ }else fail('INFERENCE_LOCAL_MODEL_SOURCE_UNBOUND');
  const f=grant.formula;
  if(f?.formulaId!=='LEEWAY-FORMULA-v1.0'||f.engineSha256!==FORMULA_ENGINE_SHA256||!identity(f.adapterId)||!identity(f.mappingId)||!isSha256(f.mappingSha256)||!isSha256(f.inputHash)||!isSha256(f.resultHash)||!isSha256(f.receiptSha256)||!isSha256(f.observationsSha256)||!isSha256(f.envelopeSha256))fail('INFERENCE_FORMULA_BINDING_UNQUALIFIED');
  if(grant.preVeritas?.requestHash!==requestHash||!isSha256(grant.preVeritas?.receiptSha256))fail('INFERENCE_PRE_VERITAS_UNBOUND');
