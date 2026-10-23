@@ -35,6 +35,19 @@ class DiscoveryTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             leeway.set_device(1)
 
+    def test_known_software_renderer_is_rejected_even_without_dxgi_flag(self):
+        if leeway._native is None:
+            self.skipTest("native adapter cannot load on this host")
+        predicate = leeway._native.adapter_is_eligible
+        # Captured Windows CI identity. It incorrectly arrived with Flags==0.
+        self.assertFalse(predicate("Microsoft Basic Render Driver", 0x1414, 0x008c, 0))
+        self.assertFalse(predicate("Localized renderer name", 0x1414, 0x008c, 0))
+        self.assertFalse(predicate("Unknown software adapter", 0, 0, 2))
+        self.assertFalse(predicate("Remote adapter", 0x10de, 0, 1))
+        # These are classification fixtures, never execution evidence.
+        self.assertTrue(predicate("NVIDIA fixture", 0x10de, 0, 0))
+        self.assertTrue(predicate("Intel fixture", 0x8086, 0, 0))
+
     def test_unavailable_is_honest(self):
         if leeway.is_available():
             self.skipTest("physical GPU is available")

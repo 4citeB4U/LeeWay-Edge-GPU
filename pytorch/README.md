@@ -3,7 +3,8 @@
 Experimental native GPU backend, registered as `leeway` and exposed through
 `torch.leeway`. The implemented Windows adapter uses physical D3D12 GPU buffers
 and HLSL compute shaders. It excludes software/remote DXGI adapters, never selects
-WARP, and installs no CPU compute fallback. CPU memory participates in explicit
+WARP or Microsoft Basic Render Driver (including its observed unflagged CI form),
+and installs no CPU compute fallback. CPU memory participates in explicit
 uploads/readbacks and host orchestration.
 
 The display name is **Leeway Edge GPU**. `get_device_properties()` also reports

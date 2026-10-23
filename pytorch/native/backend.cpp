@@ -32,6 +32,18 @@ void check(HRESULT result, const char* operation) {
 void index(c10::DeviceIndex i) {
   TORCH_CHECK(i == -1 || i == 0, "Leeway Edge GPU: only leeway:0 is implemented");
 }
+bool software_adapter(const DXGI_ADAPTER_DESC1& description) {
+  // Observed on windows-2022 CI: Basic Render Driver 1414:008c can have
+  // Flags==0. Flags alone therefore cannot enforce the no-CPU-fallback rule.
+  std::wstring name(description.Description);
+  return (description.Flags & DXGI_ADAPTER_FLAG_SOFTWARE) ||
+         (description.VendorId == 0x1414 && description.DeviceId == 0x008c) ||
+         name.find(L"Basic Render Driver") != std::wstring::npos ||
+         name.find(L"WARP") != std::wstring::npos;
+}
+bool eligible(const DXGI_ADAPTER_DESC1& description) {
+  return !software_adapter(description) && !(description.Flags & DXGI_ADAPTER_FLAG_REMOTE);
+}
 ComPtr<IDXGIAdapter1> hardware_adapter() {
   ComPtr<IDXGIFactory6> factory;
   check(CreateDXGIFactory1(IID_PPV_ARGS(&factory)), "DXGI discovery");
@@ -43,7 +55,7 @@ ComPtr<IDXGIAdapter1> hardware_adapter() {
     check(result, "adapter enumeration");
     DXGI_ADAPTER_DESC1 description{};
     check(adapter->GetDesc1(&description), "adapter description");
-    if (description.Flags & (DXGI_ADAPTER_FLAG_SOFTWARE | DXGI_ADAPTER_FLAG_REMOTE)) continue;
+    if (!eligible(description)) continue;
     if (SUCCEEDED(D3D12CreateDevice(adapter.Get(), D3D_FEATURE_LEVEL_11_0,
                                     __uuidof(ID3D12Device), nullptr))) return adapter;
   }
@@ -413,6 +425,12 @@ TORCH_LIBRARY_IMPL(_, PrivateUse1, m) {
 }
 PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
   m.def("is_available", &available);
+  m.def("adapter_is_eligible", [](std::wstring name, UINT vendor, UINT device, UINT flags) {
+    DXGI_ADAPTER_DESC1 description{};
+    wcsncpy_s(description.Description, name.c_str(), _TRUNCATE);
+    description.VendorId = vendor; description.DeviceId = device; description.Flags = flags;
+    return eligible(description);
+  });
   m.def("validate_shaders", [] { compile_shader("matmul"); compile_shader("elementwise"); return true; });
   m.def("initialize", [] { hooks.init(); });
   m.def("synchronize", [] { hooks.init(); }); // Every queue submission is synchronous.
@@ -426,7 +444,8 @@ PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
     pybind11::dict d; d["adapter_name"]=std::wstring(desc.Description); d["vendor_id"]=desc.VendorId;
     d["device_id"]=desc.DeviceId; d["dedicated_video_memory"]=desc.DedicatedVideoMemory;
     d["shared_system_memory"]=desc.SharedSystemMemory; d["runtime"]="D3D12";
-    d["software_adapter"]=false; d["index"]=0; return d;
+    d["software_adapter"]=software_adapter(desc); d["dxgi_flags"]=desc.Flags;
+    d["index"]=0; return d;
   });
 }
 } // namespace leeway

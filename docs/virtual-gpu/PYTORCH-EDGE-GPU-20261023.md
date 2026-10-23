@@ -41,6 +41,14 @@ adapter cannot load; `LEEWAY_REQUIRE_GPU=1` makes that state a failure.
 
 ## Acceptance and promotion
 
+The first Windows hosted runs exposed Microsoft Basic Render Driver, vendor
+`0x1414`, device `0x008c`, with DXGI flags that did not identify it as software.
+Numerical checks ran through that renderer and the process subsequently returned
+exit code 1; those runs are not physical GPU proof. The selector now rejects that
+known software identity even when its flags are zero, with a native regression
+check. The physical-GPU checks must skip on this hosted software renderer.
+Shutdown behavior on actual hardware remains part of required qualification.
+
 The test suite compares rectangular partial-tile matmul, GPU fill, elementwise
 operations, explicit copies and resource release with CPU reference results. It
 also checks unsupported-operator, dtype, stride, shape and budget failures.
