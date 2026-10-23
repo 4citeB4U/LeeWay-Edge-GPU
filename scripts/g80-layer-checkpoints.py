@@ -46,6 +46,8 @@ def run(file):
   gate=ff@W('ffn_gate.weight').T;up=ff@W('ffn_up.weight').T
   x=hidden+(gate/(1+np.exp(-np.clip(gate,-80,80)))*up)@W('ffn_down.weight').T
   if not np.isfinite(x).all():raise ValueError(f'G80_NONFINITE_LAYER_{layer}')
+  if os.environ.get('LEEWAY_G82_ARRAY_DIR'):
+   for position in range(2):x[position].astype('<f4').tofile(os.path.join(os.environ['LEEWAY_G82_ARRAY_DIR'],f'batched_p{position}_l{layer}.bin'))
   checkpoints.append({'layer':layer,'pos0':hashlib.sha256(x[0].tobytes()).hexdigest(),'pos1':hashlib.sha256(x[1].tobytes()).hexdigest(),'pos1L2':float(np.linalg.norm(x[1].astype(np.float64)))})
  outcome={'status':'G80_LAYER_CHECKPOINTS_CAPTURED','positions':[151643,87],'layers':36,'elapsedSeconds':round(time.perf_counter()-begin,3),'checkpoints':checkpoints,'referenceIntermediateTensorsAvailable':False,'referenceSecondTokenId':970,'leewayIncrementalSecondTokenId':198,'divergenceLocated':False,'productionAccepted':False}
  print(json.dumps(outcome,indent=2))
