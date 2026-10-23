@@ -1,4 +1,11 @@
 # LeeWay Edge GPU
+
+Experimental PyTorch integration: [Leeway Edge GPU for PyTorch](pytorch/README.md)
+registers `torch.leeway` / `device="leeway"` with a native Windows D3D12 adapter.
+See the [implementation and qualification status](docs/virtual-gpu/PYTORCH-EDGE-GPU-20261023.md).
+Bounded Windows GPU tensor checks passed on an RTX 5060; production authorization
+and general model compatibility remain pending.
+
 ### *Sovereign Deterministic Compute | The LeeWay Standards in Action*
 
 ![LeeWay Banner](https://img.shields.io/badge/LEL--X-SOVEREIGN-4bc4d9?style=for-the-badge)
