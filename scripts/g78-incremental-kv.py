@@ -47,6 +47,8 @@ def run(filename,tokens=(151643,87)):
    gate=h@W('ffn_gate.weight').T;up=h@W('ffn_up.weight').T
    x=hidden+(gate/(1+np.exp(-np.clip(gate,-80,80)))*up)@W('ffn_down.weight').T
    if not np.isfinite(x).all():raise ValueError('G78_NONFINITE_'+str(layer))
+   if os.environ.get('LEEWAY_G81_CAPTURE'): 
+    with open(os.environ['LEEWAY_G81_CAPTURE'],'a',encoding='utf8') as checkpoint:checkpoint.write(json.dumps({'position':pos,'layer':layer,'sha256':hashlib.sha256(x.tobytes()).hexdigest()})+'\n')
   final=g73.rms(x,g73.weights(filename,base,directory,'output_norm.weight'))
   best=(-float('inf'),-1)
   with open(filename,'rb') as f:
