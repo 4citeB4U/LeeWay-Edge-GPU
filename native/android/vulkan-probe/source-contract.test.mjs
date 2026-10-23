@@ -1,0 +1,10 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+const root=new URL('.',import.meta.url);
+const cpp=readFileSync(new URL('main.cpp',root),'utf8');
+const shader=readFileSync(new URL('shader.comp',root),'utf8');
+test('shader and host reference implement same deterministic formula',()=>{assert.match(shader,/i\*17u\)\^0x5A5A1234u/);assert.match(cpp,/i\*17u\)\^0x5A5A1234u/)});
+test('native Vulkan device queue and pipeline submission present',()=>{for(const api of ['vkEnumeratePhysicalDevices','VK_QUEUE_COMPUTE_BIT','vkCreateComputePipelines','vkCmdDispatch','vkQueueSubmit'])assert.ok(cpp.includes(api),api)});
+test('native fence, host readback and exact mismatch count present',()=>{for(const api of ['vkWaitForFences','vkMapMemory','vkCmdPipelineBarrier','mismatches++'])assert.ok(cpp.includes(api),api)});
+test('probe never claims LeeWay GPU model inference',()=>{assert.match(cpp,/VULKAN_PHYSICAL_GPU_KERNEL_ONLY/);assert.doesNotMatch(cpp,/CANONICAL_GPU_INFERENCE_PASS/)});

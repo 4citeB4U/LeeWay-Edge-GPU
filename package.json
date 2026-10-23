@@ -1,3 +1,24 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:1c885a6641513e5b96c93f252ad7f3f45cc7a0fb274c59830ff85d30313a5512
-size 466
+{
+    "name":  "leeway-edge-gpu",
+    "version":  "1.0.0",
+    "description":  "Sovereign Edge WebGPU Compute Fabric",
+    "main":  "app.js",
+    "scripts":  {
+                    "start":  "serve -s . -l 8080",
+                    "build":  "node tests/virtual-gpu/source-check.mjs",
+                    "dev":  "serve . -l 3001",
+                    "test:gpu":  "node tests/virtual-gpu/local-acceptance.mjs",
+                    "test:formula-binding":  "node tests/virtual-gpu/formula-binding-check.mjs"
+                },
+    "keywords":  [
+                     "WebGPU",
+                     "Leeway",
+                     "AgentLee",
+                     "Edge"
+                 ],
+    "author":  "Leonard Lee",
+    "license":  "MIT",
+    "dependencies":  {
+                         "serve":  "^14.2.1"
+                     }
+}

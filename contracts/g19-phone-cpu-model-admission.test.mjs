@@ -1,0 +1,12 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {admitPhoneCpuModel as admit} from './g19-phone-cpu-model-admission.mjs';
+const good={device:{platform:'ANDROID',model:'SM-F956U',id:'fold6'},model:{location:'PHONE_PRIVATE_OR_OWNER_GRANTED',residentOnTarget:true,sha256:'ab'.repeat(32),id:'SmolLM2-360M'},runtime:{localNative:true,entrypointVerified:true,backend:'CPU',gpuOffloadDisabled:true},routing:{pairedComputerDisabled:true,cloudDisabled:true},authority:{requestScopedGrantVerified:true,targetDeviceId:'fold6'}};
+test('full synthetic requirements yield readiness only, never inference verified',()=>{const x=admit(good);assert.equal(x.admitted,true);assert.equal(x.canonicalInferenceVerified,false);assert.equal(x.physicalGpuAccelerationAllowed,false)});
+test('old historical model receipt is not current phone model bytes',()=>assert.equal(admit({...good,model:{...good.model,residentOnTarget:false}}).admitted,false));
+test('Adreno GPU backend forbidden',()=>assert.ok(admit({...good,runtime:{...good.runtime,backend:'VULKAN'}}).blockers.includes('LOCAL_CPU_INFERENCE_ENTRYPOINT_MISSING')));
+test('GPU offload must be explicitly disabled',()=>assert.equal(admit({...good,runtime:{...good.runtime,gpuOffloadDisabled:false}}).admitted,false));
+test('paired PC route forbidden',()=>assert.equal(admit({...good,routing:{...good.routing,pairedComputerDisabled:false}}).admitted,false));
+test('cloud route forbidden',()=>assert.equal(admit({...good,routing:{...good.routing,cloudDisabled:false}}).admitted,false));
+test('request-scoped owner grant mandatory',()=>assert.equal(admit({...good,authority:{requestScopedGrantVerified:false,targetDeviceId:'fold6'}}).admitted,false));
+test('different device is not Fold6-local',()=>assert.equal(admit({...good,device:{...good.device,model:'Windows'}}).admitted,false));

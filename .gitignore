@@ -26,3 +26,8 @@ build/
 *.bin
 *.pt
 *.onnx
+
+# Local profiles/raw observations are not publication artifacts.
+/qualification/g0-*/
+/qualification/local-runs/
+/qualification/tensor-g2/raw/
