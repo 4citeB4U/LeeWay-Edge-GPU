@@ -44,6 +44,6 @@ jobs:
         if: runner.os == 'Windows'
         run: python -c "from leeway_edge_gpu import _C; assert _C.validate_shaders(); print('Physical GPU available:', _C.is_available())"
       - name: Run discovery and conditional hardware checks
-        run: python -m unittest discover -s tests -v
+        run: python -u -m unittest discover -s tests -v
       # Hosted runners can compile/load the extension. Physical GPU checks skip
       # when no hardware adapter exists; this workflow does not certify GPU math.

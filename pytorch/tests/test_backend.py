@@ -47,6 +47,16 @@ class DiscoveryTests(unittest.TestCase):
 
 @unittest.skipUnless(leeway.is_available(), "physical D3D12 GPU/native extension unavailable")
 class PhysicalGPUChecks(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        print("\nLeeway Edge GPU adapter:", leeway.get_device_properties(), flush=True)
+
+    @classmethod
+    def tearDownClass(cls):
+        gc.collect()
+        leeway.synchronize()
+        print("Leeway Edge GPU final statistics:", leeway.status()["statistics"], flush=True)
+
     def test_properties_and_real_transfer(self):
         props = leeway.get_device_properties()
         self.assertEqual(props["name"], "Leeway Edge GPU")
