@@ -26,3 +26,10 @@ build/
 *.bin
 *.pt
 *.onnx
+
+# Local PyTorch extension builds and evidence
+__pycache__/
+*.pyc
+*.pyd
+*.egg-info/
+pytorch/test-results/

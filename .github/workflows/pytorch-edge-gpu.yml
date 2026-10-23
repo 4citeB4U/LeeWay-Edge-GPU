@@ -1,0 +1,49 @@
+name: Leeway Edge GPU PyTorch backend
+
+on:
+  pull_request:
+    paths:
+      - 'pytorch/**'
+      - '.github/workflows/pytorch-edge-gpu.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'pytorch/**'
+      - '.github/workflows/pytorch-edge-gpu.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    name: PyTorch discovery and native build (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-2022]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: pytorch
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install build and PyTorch dependencies
+        run: python -m pip install setuptools ninja torch==2.12.0 --index-url https://download.pytorch.org/whl/cpu --extra-index-url https://pypi.org/simple
+      - name: Compile installed Windows SDK adapter
+        if: runner.os == 'Windows'
+        shell: cmd
+        run: |
+          for /f "usebackq tokens=*" %%i in (`"%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe" -latest -property installationPath`) do call "%%i\VC\Auxiliary\Build\vcvars64.bat"
+          set DISTUTILS_USE_SDK=1
+          python setup.py build_ext --inplace
+      - name: Require native registration to load on Windows
+        if: runner.os == 'Windows'
+        run: python -c "from leeway_edge_gpu import _C; assert _C.validate_shaders(); print('Physical GPU available:', _C.is_available())"
+      - name: Run discovery and conditional hardware checks
+        run: python -m unittest discover -s tests -v
+      # Hosted runners can compile/load the extension. Physical GPU checks skip
+      # when no hardware adapter exists; this workflow does not certify GPU math.
