@@ -52,6 +52,7 @@ def run(filename,tokens=(151643,87)):
     x.astype('<f4').tofile(os.path.join(os.environ['LEEWAY_G82_ARRAY_DIR'],f'cached_p{pos}_l{layer}.bin'))
    if os.environ.get('LEEWAY_G81_CAPTURE'): 
     with open(os.environ['LEEWAY_G81_CAPTURE'],'a',encoding='utf8') as checkpoint:checkpoint.write(json.dumps({'position':pos,'layer':layer,'sha256':hashlib.sha256(x.tobytes()).hexdigest()})+'\n')
+  if os.environ.get('LEEWAY_G87_HIDDEN_PATH') and pos==len(tokens)-1:x.astype('<f4').tofile(os.environ['LEEWAY_G87_HIDDEN_PATH'])
   final=g73.rms(x,g73.weights(filename,base,directory,'output_norm.weight'))
   best=(-float('inf'),-1)
   with open(filename,'rb') as f:
