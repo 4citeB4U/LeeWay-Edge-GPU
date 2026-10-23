@@ -27,17 +27,38 @@ and multi-device scheduling are not implemented in this adapter.
 - Installed Python 3.13.13, PyTorch 2.12.0+cpu, MSVC 14.44 and Windows SDK 26100
   were used. A CPU-distributed PyTorch installation can load an external device
   extension; it does not turn the extension's GPU kernels into CPU calculations.
-- Native compilation/linking succeeded.
-- Local discovery/error-handling suite: four passed; eight hardware checks skipped.
-- The required-GPU test attempt failed before extension initialization:
+- Native compilation/linking succeeded. An initial test attempt failed before initialization:
   `DLL load failed while importing _C: An Application Control policy has blocked this file.`
-- Windows Application Control was preserved. No policy, key, signer, enrollment,
-  device driver or system setting was changed to load the module.
+- After ordinary source repairs and rebuilding, the local test invocation loaded
+  the module and used **NVIDIA GeForce RTX 5060 Laptop GPU**, vendor 4318, device
+  11609, D3D12, with `software_adapter=false`. No policy, key, signer, enrollment,
+  device driver or system setting was changed to load it. The earlier load error
+  is retained as an observation, not a current permanent blocker.
+- Final required-GPU run (`LEEWAY_REQUIRE_GPU=1`): **13 passed, 1 skipped**,
+  process exit **0**. The skip is the unavailable-device branch. GPU checks
+  include fill, rectangular partial-tile matmul/readback, zero-inner-dimension
+  matmul, addition/multiplication/ReLU, copies, resource release, unsupported
+  operator/dtype/stride/shape/budget/async failures, and clean child-process exit
+  while a GPU tensor remains live.
+- Main-process counters: **14 GPU dispatches**, 1,168 upload bytes, 10,548
+  readback bytes, **0 remaining tracked tensor-allocation bytes**. Child-process
+  allocations/dispatches are separate.
 
-Physical GPU tensor execution/readback is therefore **BLOCKED / UNVERIFIED** on
-this host. Source code and successful compilation do not establish kernel
-correctness. The standard suite explicitly skips hardware checks when the
-adapter cannot load; `LEEWAY_REQUIRE_GPU=1` makes that state a failure.
+This establishes the bounded Windows GPU tensor path on that adapter. It does
+not establish other hardware/platforms, throughput, large-model inference or
+production governance. The standard suite explicitly skips hardware checks when
+the adapter cannot load; `LEEWAY_REQUIRE_GPU=1` makes that state a failure.
+
+Final local SHA-256 evidence (source bytes on this workstation):
+
+| Artifact | SHA-256 |
+| --- | --- |
+| `pytorch/native/backend.cpp` | `8b9f8d7bb0c1f4e2ed74de9d2296d855152e8d4813f3f30854275141ff32cf60` |
+| `pytorch/leeway_edge_gpu/__init__.py` | `943bd62fb15faef9552681338bfcdcb3cee6d5800b795c8ec6182df318d56fbd` |
+| local `_C.cp313-win_amd64.pyd` | `1640936ec11cb9eb8513a8837bd15f36a9f88b43679e2ad00f05d1c668781c4d` |
+
+The binary is a local build artifact, not a signed production release. No canonical
+receipt or Learning Ledger entry is implied by this diagnostic evidence.
 
 ## Acceptance and promotion
 
@@ -47,7 +68,9 @@ Numerical checks ran through that renderer and the process subsequently returned
 exit code 1; those runs are not physical GPU proof. The selector now rejects that
 known software identity even when its flags are zero, with a native regression
 check. The physical-GPU checks must skip on this hosted software renderer.
-Shutdown behavior on actual hardware remains part of required qualification.
+The initial native runtime also returned exit code 1 after numerical tests.
+The Python exit hook now releases D3D12 runtime objects before Windows DLL
+process-detach; final parent/child process shutdown checks pass on the laptop GPU.
 
 The test suite compares rectangular partial-tile matmul, GPU fill, elementwise
 operations, explicit copies and resource release with CPU reference results. It

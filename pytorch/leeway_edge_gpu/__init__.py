@@ -1,5 +1,6 @@
 """Leeway Edge GPU PyTorch registration. No CPU compute fallback is installed."""
 from importlib import import_module
+import atexit
 import torch
 
 PRODUCT_NAME = "Leeway Edge GPU"
@@ -18,6 +19,9 @@ try:
     _native = import_module("._C", __name__)
 except ImportError as exc:
     _load_error = str(exc)
+else:
+    # Driver COM objects must be released before Windows DLL process-detach.
+    atexit.register(_native._shutdown)
 
 
 def _require_native():

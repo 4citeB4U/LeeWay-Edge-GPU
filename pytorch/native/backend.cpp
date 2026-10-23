@@ -24,6 +24,7 @@ constexpr uint64_t MAX_ELEMENTS = 4 * 1024 * 1024;
 constexpr uint64_t MAX_MULTIPLIES = 64 * 1024 * 1024;
 std::atomic<uint64_t> allocated{0}, dispatches{0}, uploads{0}, downloads{0};
 std::atomic<bool> initialized{false};
+std::atomic<bool> shutdown_requested{false};
 
 void check(HRESULT result, const char* operation) {
   TORCH_CHECK(SUCCEEDED(result), "Leeway Edge GPU: ", operation,
@@ -62,6 +63,7 @@ ComPtr<IDXGIAdapter1> hardware_adapter() {
   TORCH_CHECK(false, "Leeway Edge GPU: no physical D3D12 GPU is available; CPU/WARP fallback is disabled");
 }
 bool available() noexcept {
+  if (shutdown_requested.load()) return false;
   try { hardware_adapter(); return true; } catch (...) { return false; }
 }
 
@@ -127,6 +129,7 @@ struct Runtime {
   ComPtr<IDXGIAdapter1> adapter;
   std::mutex mutex;
   uint64_t fence_value = 0;
+  bool closed = false;
   Runtime() {
     adapter = hardware_adapter();
     check(D3D12CreateDevice(adapter.Get(), D3D_FEATURE_LEVEL_11_0,
@@ -184,6 +187,7 @@ struct Runtime {
     return result;
   }
   void begin() {
+    TORCH_CHECK(!closed, "Leeway Edge GPU: runtime has shut down");
     check(allocator->Reset(), "allocator reset");
     check(commands->Reset(allocator.Get(), nullptr), "command reset");
   }
@@ -205,13 +209,31 @@ struct Runtime {
     check(fence->SetEventOnCompletion(fence_value, nullptr), "GPU completion wait");
     check(device->GetDeviceRemovedReason(), "GPU execution");
   }
+  void shutdown() {
+    std::lock_guard<std::mutex> lock(mutex);
+    if (closed) return;
+    // Release COM runtime objects before Windows DLL process-detach. Submissions
+    // are synchronous. Outstanding tensors retain their own resource references
+    // until Python releases them; no new dispatch is allowed after this point.
+    commands.Reset(); allocator.Reset(); fence.Reset();
+    mm_pipeline.Reset(); element_pipeline.Reset(); root.Reset();
+    queue.Reset(); device.Reset(); adapter.Reset();
+    closed = true;
+    initialized = false;
+    shutdown_requested = true;
+  }
 };
-Runtime& runtime() { static Runtime instance; return instance; }
+Runtime& runtime() {
+  TORCH_CHECK(!shutdown_requested.load(), "Leeway Edge GPU: runtime has shut down");
+  static Runtime instance; return instance;
+}
 
 struct GPUAllocator final : c10::Allocator {
   c10::DataPtr allocate(size_t bytes) override {
     TORCH_CHECK(bytes <= MAX_ELEMENTS * 4, "Leeway Edge GPU: tensor budget exceeded");
     auto& rt = runtime();
+    std::lock_guard<std::mutex> lock(rt.mutex);
+    TORCH_CHECK(!rt.closed, "Leeway Edge GPU: runtime has shut down");
     auto value = std::make_unique<Buffer>();
     value->resource = rt.resource(bytes, D3D12_HEAP_TYPE_DEFAULT, D3D12_RESOURCE_STATE_COMMON);
     value->bytes = bytes;
@@ -425,6 +447,7 @@ TORCH_LIBRARY_IMPL(_, PrivateUse1, m) {
 }
 PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
   m.def("is_available", &available);
+  m.def("_shutdown", [] { if (initialized.load()) runtime().shutdown(); });
   m.def("adapter_is_eligible", [](std::wstring name, UINT vendor, UINT device, UINT flags) {
     DXGI_ADAPTER_DESC1 description{};
     wcsncpy_s(description.Description, name.c_str(), _TRUNCATE);

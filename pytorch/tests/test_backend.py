@@ -156,6 +156,11 @@ class PhysicalGPUChecks(unittest.TestCase):
         gc.collect()
         self.assertEqual(leeway.memory_allocated(), before)
 
+    def test_process_shutdown_with_live_tensor(self):
+        code = "import torch, leeway_edge_gpu; value=torch.ones(8, device='leeway'); print(value.cpu())"
+        result = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, timeout=30)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
 
 if __name__ == "__main__":
     unittest.main()

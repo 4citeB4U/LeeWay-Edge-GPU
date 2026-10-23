@@ -11,6 +11,10 @@ The display name is **Leeway Edge GPU**. `get_device_properties()` also reports
 the underlying hardware adapter and vendor. Registration does not change the
 Windows display-adapter name, create a physical LeeWay chip, or make CUDA claims.
 
+The Windows qualification run passed 13 checks on an NVIDIA GeForce RTX 5060
+Laptop GPU with one unavailable-device check skipped. It includes numerical
+readback and clean process shutdown. See [evidence and scope](../docs/virtual-gpu/PYTORCH-EDGE-GPU-20261023.md).
+
 ## Build against an existing PyTorch installation
 
 This initial adapter targets Windows x64, Python >=3.10 and PyTorch 2.12.x.
