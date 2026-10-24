@@ -17,4 +17,16 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: industries.leeway.gpu
         PRODUCT_NAME: LeeWayGPU
         GENERATE_INFOPLIST_FILE: YES
-        TARGETED_DEVICE_FAMILY: "1"
+        TARGETED_DEVICE_FAMILY: "1,2"
+  LeeWayGPUMac:
+    type: application
+    platform: macOS
+    deploymentTarget: "14.0"
+    sources:
+      - path: Sources
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: industries.leeway.gpu
+        PRODUCT_NAME: LeeWayGPU
+        GENERATE_INFOPLIST_FILE: YES
+        MACOSX_DEPLOYMENT_TARGET: "14.0"

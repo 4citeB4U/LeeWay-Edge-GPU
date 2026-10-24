@@ -1,3 +1,5 @@
+// Historical G19 native OS-adapter diagnostic. The standalone product acceptance
+// contract is standalone-product-acceptance.mjs and has no OS enumeration gate.
 // G19 J-5: separate LeeWay compute-interface verification from OS-visible GPU independence.
 // This classifier is NOT a device installer or an acceptance certificate.
 const validText=x=>typeof x==='string'&&x.trim().length>0;

@@ -150,7 +150,7 @@ subscribeTelemetry(({type, data}) => {
 const Controller = {
   approve: (task) => {
     setAgentState('protect', true);
-    if (task.TAG.startsWith('AI.COMPUTE') && gpuState.device) {
+    if (task.TAG === 'LEEWAY.COMPUTE.MATMUL.EXEC' && gpuState.device) {
       leeSpeak(`[CONTROLLER] Task Admitted securely by LWA_Protect: ${task.TAG}`);
       return true;
     }
@@ -162,6 +162,20 @@ const Controller = {
 
 // Initialize Quad Pipeline execution capability
 const quadPipeline = new QuadPipeline({
+  verifier: {
+    verify: async (task, execution) => {
+      const expected = await cpuMatMul(matA, matB, task.metadata.size);
+      const actual = execution.result;
+      let maxAbsoluteError = 0;
+      let valid = actual.length === expected.length;
+      for (let i = 0; valid && i < expected.length; i++) {
+        const error = Math.abs(actual[i] - expected[i]);
+        valid = Number.isFinite(actual[i]) && Number.isFinite(expected[i]) && error <= 1e-4 + 1e-4 * Math.abs(expected[i]);
+        maxAbsoluteError = Math.max(maxAbsoluteError, error);
+      }
+      return { valid, method: 'existing fallback/cpu.worker.js reference', maxAbsoluteError };
+    }
+  },
   primary: {
     run: async (task) => {
       const t0 = performance.now();

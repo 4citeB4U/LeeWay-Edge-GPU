@@ -1,0 +1,11 @@
+cmake_minimum_required(VERSION 3.22)
+project(leeway_g19_android_vulkan LANGUAGES CXX)
+if(NOT ANDROID)
+  message(FATAL_ERROR "G19 probe must target Android; no host GPU substitution")
+endif()
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+# Android NDK provides Vulkan headers and libvulkan.so via the sysroot.
+find_library(ANDROID_VULKAN_LIBRARY vulkan REQUIRED)
+add_executable(leeway-g19-vulkan main.cpp)
+target_link_libraries(leeway-g19-vulkan PRIVATE ${ANDROID_VULKAN_LIBRARY})

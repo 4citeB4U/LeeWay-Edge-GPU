@@ -1,3 +1,38 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:1c885a6641513e5b96c93f252ad7f3f45cc7a0fb274c59830ff85d30313a5512
-size 466
+{
+    "name":  "leeway-edge-gpu",
+    "version":  "1.0.0",
+    "description":  "Sovereign Edge WebGPU Compute Fabric",
+    "main":  "app.js",
+    "exports": {
+        ".": "./app.js",
+        "./inference-provider": "./sdk/inference-provider.mjs",
+        "./model-resource": "./sdk/model-resource.mjs",
+        "./node-model-resource": "./sdk/node-model-resource.mjs",
+        "./transformer-buffer-plan": "./sdk/transformer-buffer-plan.mjs",
+        "./platform-contract": "./contracts/gpu-platform-contract.mjs",
+        "./product-acceptance": "./contracts/standalone-product-acceptance.mjs",
+        "./gpu-bootstrap": "./core/gpu.bootstrap.js"
+    },
+    "scripts":  {
+                    "start":  "serve -s . -l 8080",
+                    "build":  "node tests/virtual-gpu/source-check.mjs",
+                    "dev":  "serve . -l 3001",
+                    "test:gpu":  "node tests/virtual-gpu/local-acceptance.mjs",
+                    "test:tensor": "node --test tests/virtual-gpu/tensor-unit.test.mjs",
+                    "test:formula-binding":  "node tests/virtual-gpu/formula-binding-check.mjs",
+                    "test:portable": "node --test contracts/*.test.mjs tests/virtual-gpu/governed-inference.test.mjs tests/virtual-gpu/model-resource.test.mjs tests/virtual-gpu/node-model-resource.test.mjs tests/virtual-gpu/inference-provider.test.mjs tests/virtual-gpu/tensor-unit.test.mjs tests/virtual-gpu/transformer-buffer-plan.test.mjs",
+                    "test:software": "node --test tests/virtual-gpu/software-cpu-host.test.mjs tests/virtual-gpu/software-square-locality.test.mjs tests/virtual-gpu/governed-software-compute.test.mjs tests/virtual-gpu/canonical-provider-readiness.test.mjs tests/virtual-gpu/canonical-formula-software-observation.test.mjs tests/virtual-gpu/software-workload-policy-candidate.test.mjs tests/virtual-gpu/g36-live-formula-ldwmd-guardrails.test.mjs",
+                    "bench:governed": "node tests/virtual-gpu/governed-performance.mjs"
+                },
+    "keywords":  [
+                     "WebGPU",
+                     "Leeway",
+                     "AgentLee",
+                     "Edge"
+                 ],
+    "author":  "Leonard Lee",
+    "license":  "MIT",
+    "dependencies":  {
+                         "serve":  "^14.2.1"
+                     }
+}
