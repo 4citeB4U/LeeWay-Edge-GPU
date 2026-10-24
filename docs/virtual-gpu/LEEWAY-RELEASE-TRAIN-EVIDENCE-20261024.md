@@ -4,7 +4,32 @@ Status: OWNER-ACCEPTED ENGINEERING EVIDENCE; PRODUCTION SAME-REQUEST QUALIFICATI
 Source authority: LeeWay owner-directed repository and retained receipts
 Product identity: LeeWay Edge GPU, `leeway.gpu.service`
 Execution identity: LeeWay-owned quantized WGSL graph, with explicitly qualified LeeWay software providers and optional platform adapters.
-This document does not generate a grant, waive protected gates, merge drafts, or enable live dispatch.
+This document records source merges and evidence. It does not create grants, waive protected gates, or enable live dispatch.
+
+## Live merge and deployment ledger — October 24, 2026
+This section supersedes the pre-merge draft states and head-only input revisions recorded below. Source code merge is not protected runtime enrollment.
+
+| Component | Merge destination | Merge commit | Result |
+| --- | --- | --- | --- |
+| GPU #11 software/mathematics | GPU main | `12c2fa35d2684dc4606ac4c468adb1c4810bac6e` | MERGED |
+| GPU #13 portable core + initial evidence record | GPU main | `c75af1e84a45abb0b4a4f9b8b69b41eb97e1c80f` | MERGED |
+| Device Bridge #55 app service | Device Bridge main | `1548a207721c0fd1b5361870c071bd85d4136b46` | MERGED |
+| Model Hub #2 GPU-required client | Model Hub main | `c6d367155f01f769c44256e13b5f7913b5cc1214` | MERGED |
+| Formula #16 G41 | Formula main | `38f1d8a4fbad5d32223da245bcacce56f6a27317` | MERGED; optional candidate |
+| Formula #17 G42–G43 | Formula main | `fb1016d906e372c1a2b1cbc929fea031b5ebd68a` | MERGED; optional candidate |
+| Formula #19 G44 stronger hierarchy | Formula main | `11dbd9ade2d90285d66fb6b210dd42da51e542cd` | MERGED; optional candidate |
+| Runtime #76 append-only Learning readback | Runtime main | `d4825077bc7557ef46af40fc12b867c89be11423` | MERGED; scoped read-only |
+| Runtime #78 original LDWMD host buffers | Runtime main | `cb768ba8cfd1147be50b9ff66ed0f97681005edf` | MERGED |
+| Runtime #77 software authority/source checks | Runtime main | `93ef840c40da242fb3a7912a38bfd1a93aad9eaa` | MERGED after conflict reconciliation |
+| Runtime #80 portable inference binder | `repair/floating-agent-interaction` only | `1230c3b14fdedb2b4af5c450e17c57c7523973ff` | MERGED TO ACTIVE BASE; NOT MAIN |
+
+The Runtime #77 merge preserved the newer LDWMD and workplane workflow and added the G27–G38 candidate tests. Its pinned seven G37 source hashes were NOT changed: the Windows SHA mismatch was due to CRLF checkout, repaired by explicit LF .gitattributes. Local reconciling tests: 74/74 authority and 7/7 LDWMD. The new head `365b673ab8a51a09a1b06575655c76370022c420` passed GitHub Persistent Workplane Proof before merge.
+
+Outstanding branch convergence: GPU #12 optional torch.leeway is unmerged and conflicts with current GPU main after retarget; Formula #18 is a divergent G44 candidate requiring unique-source comparison against merged #19; Runtime #79 remains SAMPLE_ONLY and unmerged; Runtime #80's merged *feature base* still requires deliberate mainline reconciliation. Historical C3 #62/#65 remain draft proof branches, not a release. Do not force-merge changes or silently promote candidate attestations.
+
+E-drive custody: original E-drive checkout was compared by Git object hashes against `codex/recovery-gpu-source-20261023`: 164 modified/untracked files were byte-identical; 10 differed by raw byte count (nine normalized into previously committed identical Git blobs; one real contributor documentation delta), 176 other missing paths were largely generated evidence or local work notes. The only unique source-control delta was 127 new contributor-doc lines, committed and pushed to nonproduction `codex/recovery-gpu-delta-20261024` as `dca3c4e`. The original dirty working tree and local generated evidence were not overwritten or bulk-pushed.
+
+Live read-only Runtime readiness on Agent-Lee: Receipt Ledger HTTP 200 (24 valid entries); `scripts/c3-live-admission-readiness.mjs` returned `BLOCKED` with `INDEPENDENT_VERITAS_PROVIDER_UNREGISTERED` and `CANONICAL_LEARNING_LEDGER_PROVIDER_UNREGISTERED`. The existing local GPU service at port 4178 responds to `/v1/status` but reports `CANONICAL_GPU_ISSUER_UNBOUND`, `requestedEnabled:false`, `productionReady:false`, and `dispatchAllowed:false`; it does not expose the new governed `/v1/capabilities` route yet. Thus **protected production runtime has NOT been activated**, and no fresh inference ledger append or certificate was claimed. Fail-closed policy remains enforced.
 
 ## LeeWay invariants
 - Agent Lee = `LEEWAY_MACHINE_CONSCIOUSNESS`; the model is an optional task capability, never the agent identity.
@@ -16,7 +41,7 @@ This document does not generate a grant, waive protected gates, merge drafts, or
 - Frozen `LEEWAY-FORMULA-v1.0` is unchanged. New policy adapters and research are versioned outside it.
 - Never mistake test fixtures, source claims, owner approval, sample cryptographic receipts, or hardware diagnostic execution for a completed protected same-request production transaction.
 
-## GitHub source revision pins (reviewed 2026-10-24)
+## Historical source revision pins before the above merges (reviewed 2026-10-24)
 | Component | PR | Source head SHA | State / scope |
 | --- | --- | --- | --- |
 | GPU G23-G40 software and math foundation | [GPU #11](https://github.com/4citeB4U/LeeWay-Edge-GPU/pull/11) | `e7b61d4b6bbcb569ab7ed2f4f2c6960b209086be` | Draft, candidate |
