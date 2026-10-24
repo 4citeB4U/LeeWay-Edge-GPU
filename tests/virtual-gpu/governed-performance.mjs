@@ -142,6 +142,27 @@ try {
   report.promptSha256 = crypto.createHash('sha256').update(prompt).digest('hex');
   report.expectedAnswerCheck = 'EXACT_TRIMMED_TEXT_OR_TOKEN_BOUNDARY_MATCH';
 
+  const status = await request('/v1/status');
+  report.serviceStatus = {
+    serviceId: status.serviceId,
+    active: status.active,
+    requestedEnabled: status.requestedEnabled,
+    productionReady: status.productionReady,
+    dispatchAllowed: status.dispatchAllowed,
+    authorization: status.authorization,
+    formula: status.formula,
+    ldwmd: status.ldwmd,
+    continuum: status.continuum,
+    veritas: status.veritas,
+    inference: status.inference ? {
+      status: status.inference.status,
+      modelInference: status.inference.modelInference,
+      gpuVerified: status.inference.gpuVerified,
+      receiptId: status.inference.receiptId,
+      reason: status.inference.reason
+    } : null
+  };
+
   const capabilities = await request('/v1/capabilities');
   requireValue(capabilities?.schema === 'leeway.gpu.inference.v1' && capabilities.serviceId === 'leeway.gpu.service',
     'GPU_CAPABILITY_IDENTITY_MISMATCH');
@@ -154,16 +175,9 @@ try {
     receiptId: capabilities.receiptId
   };
 
-  const status = await request('/v1/status');
   requireValue(status?.serviceId === 'leeway.gpu.service' && status?.requestedEnabled === true &&
     status?.active === true && status?.inference?.gpuVerified === true &&
     status.inference.receiptId === capabilities.receiptId, 'GPU_SERVICE_NOT_ACTIVE');
-  report.serviceStatus = {
-    active: status.active,
-    requestedEnabled: status.requestedEnabled,
-    productionReady: status.productionReady,
-    dispatchAllowed: status.dispatchAllowed
-  };
 
   const activation = await request('/v1/models/activate', {method: 'POST', body: {modelId}});
   requireValue(activation?.serviceId === 'leeway.gpu.service' && activation.modelId === modelId &&
