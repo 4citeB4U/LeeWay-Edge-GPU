@@ -13,7 +13,8 @@ param([string]$OutputDirectory=(Join-Path $env:TEMP 'leeway-mcdm-kmd-msbuild-lin
 
 $ErrorActionPreference = 'Stop'
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '../../..')).Path
-$project = Join-Path $repoRoot 'third_party/microsoft-graphics-driver-samples/compute-only-sample/coskmd/CosKmd.vcxproj'
+$srcRoot = (Resolve-Path (Join-Path $repoRoot 'third_party/microsoft-graphics-driver-samples/compute-only-sample')).Path
+$project = Join-Path $srcRoot 'coskmd/CosKmd.vcxproj'
 if (-not (Test-Path -LiteralPath $project)) { throw 'LEEWAY_KMD_VENDOR_PROJECT_MISSING' }
 
 $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio/Installer/vswhere.exe'
@@ -38,6 +39,7 @@ $buildArgs = @(
     '/p:Platform=x64',
     '/p:SignMode=Off',
     '/p:EnableInf2Cat=false',
+    ("/p:SolutionDir=$srcRoot/"),
     ("/p:OutDir=$outArg"),
     ("/p:IntDir=$intArg")
 )
