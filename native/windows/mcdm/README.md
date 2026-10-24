@@ -35,6 +35,19 @@ The Microsoft example is old and its project files are not yet compatible with t
 
 The local machine has WDK 10.0.26100 headers, compiler MSVC 19.44, and infverif/signtool tools, but no VS driver project toolset integration and no prepared isolated Windows driver-test VM. It also has a Windows Application Control policy that blocks arbitrary unsigned native executables; that policy is not disabled.
 
+## Reproducible partial KMD compilation — 2026-10-24
+
+The missing Visual Studio driver-specific `PlatformToolset` does not prevent compiling individual kernel sources against the WDK. LeeWay now supplies `compile-kernel-objects.ps1`, which locates MSVC and WDK, compiles unmodified original Microsoft `CosKmdMetaCommand.cpp` and `CosKmdLogging.cpp` with `/kernel /c /Zl`, and places their source-pinned `.obj` results **outside the repository**. On Agent-Lee, **2/2 actual kernel C++ source files compiled successfully** with MSVC 19.44 and WDK 10.0.26100. The script records both object SHA-256 values.
+
+This proof is **not** a linked kernel driver. The remaining KMD modules require WPP-generated tracing headers and a complete WDK driver project build. The original D3D12 UMD likewise needs modern SDK include/type repairs; source-only compatibility is not driver compatibility. The script makes no `.sys`, INF, certificate, PnP registration, or runtime mutation.
+
+Reproduce on a correctly configured Windows development machine:
+
+```powershell
+node --test native/windows/mcdm/source-contract.test.mjs native/windows/mcdm/kmd-object-contract.test.mjs
+./native/windows/mcdm/compile-kernel-objects.ps1
+```
+
 ## Acceptance criteria — OS path
 
 Only claim `LEEWAY_GPU_OS_ADAPTER_REGISTERED` after:

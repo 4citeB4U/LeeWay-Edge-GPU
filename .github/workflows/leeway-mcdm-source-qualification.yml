@@ -35,8 +35,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Verify exact MIT source SHA hashes and no installable driver binaries
-        run: node --test native/windows/mcdm/source-contract.test.mjs
+      - name: Verify exact MIT source custody and kernel compile guards
+        run: node --test native/windows/mcdm/source-contract.test.mjs native/windows/mcdm/kmd-object-contract.test.mjs
   windows-toolchain-compatibility-only:
     runs-on: windows-2022
     steps:
@@ -59,4 +59,14 @@ jobs:
             & $msbuild $p /nologo /t:PrepareForBuild /p:Configuration=Release /p:Platform=x64 /p:WindowsTargetPlatformVersion=10.0.26100.0 /p:PlatformToolset=v143 /p:SignMode=Off /v:minimal
             if ($LASTEXITCODE -ne 0) { throw ('MCDM_SOURCE_RETARGET_CONFIG_FAILED: '+$project) }
           }
-          Write-Output 'LEEWAY_MCDM_SOURCE_RETARGET_CONFIG_PASS; NOT_KMD_COMPILED; NOT_UMD_COMPILED; NOT_INSTALLED'
+          Write-Output 'LEEWAY_MCDM_SOURCE_RETARGET_CONFIG_PASS; NOT_KMD_DRIVER_LINKED; NOT_UMD_COMPILED; NOT_INSTALLED'
+      - name: Compile two real kernel source units if WDK kernel headers are present
+        shell: pwsh
+        run: |
+          $wdk = Join-Path ${env:ProgramFiles(x86)} 'Windows Kits/10/Include/10.0.26100.0/km/dispmprt.h'
+          if (-not (Test-Path $wdk)) {
+            Write-Output 'LEEWAY_MCDM_KERNEL_OBJECT_BUILD_NOT_RUN: WDK kernel headers unavailable'
+            exit 0
+          }
+          & ./native/windows/mcdm/compile-kernel-objects.ps1
+          if ($LASTEXITCODE -ne 0) { throw 'LEEWAY_MCDM_REAL_KERNEL_OBJECT_COMPILE_FAILED' }
