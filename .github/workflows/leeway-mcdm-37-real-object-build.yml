@@ -1,14 +1,14 @@
 # LEEWAY HEADER — DO NOT REMOVE
-# REGION: LEEWAY.EDGE_GPU.WINDOWS.MCDM_31_REAL_TRANSLATION_UNITS
-# TAG: LEEWAY_WINDOWS_KERNEL_AND_D3D12_UMD_OBJECT_BUILD_V1
+# REGION: LEEWAY.EDGE_GPU.WINDOWS.MCDM_37_REAL_TRANSLATION_UNITS
+# TAG: LEEWAY_WINDOWS_KERNEL_AND_D3D12_UMD_COMPLETE_SOURCE_COMPILATION_V2
 # WHO: Creator-authorized LeeWay engineering.
 # WHAT: Real upstream kernel + user-mode module compilation, no driver install.
 # WHEN: 2026-10-24. WHERE: GitHub hosted Windows build.
-# WHY: Independently reproduce 5/11 KMD and all 26 UMD source compilations.
+# WHY: Independently reproduce 11/11 KMD and all 26 UMD source compilations.
 # HOW: MSVC, Windows SDK 26100 WDK KM headers, WPP tracing.
 # AUTHORITY: OBJECT_COMPILATION_ONLY, never OS recognition or production certification.
 # LICENSE: Existing LeeWay terms and original upstream MIT.
-name: LeeWay compute driver 31 module build
+name: LeeWay compute driver 37 module build
 on:
   pull_request:
     paths:
@@ -34,7 +34,7 @@ jobs:
         with:
           node-version: '22'
       - name: Verify original Microsoft source, MIT license and compile script safety
-        run: node --test native/windows/mcdm/source-contract.test.mjs native/windows/mcdm/kmd-object-contract.test.mjs native/windows/mcdm/module-compile-contract.test.mjs
+        run: node --test native/windows/mcdm/source-contract.test.mjs native/windows/mcdm/kmd-object-contract.test.mjs native/windows/mcdm/module-compile-contract.test.mjs native/windows/mcdm/full-kernel-source-contract.test.mjs
       - name: Verify genuine Microsoft WDK kernel headers and MSVC are available
         shell: pwsh
         run: |
@@ -43,11 +43,11 @@ jobs:
           if (-not (Test-Path (Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio/Installer/vswhere.exe'))) {
             throw 'GITHUB_RUNNER_NO_MSVC_DISCOVERY'
           }
-      - name: Compile five genuine WDDM kernel C++ source objects
+      - name: Compile all eleven genuine WDDM KMD source objects
         shell: pwsh
         run: |
-          & ./native/windows/mcdm/compile-kernel-five-objects.ps1
-          if ($LASTEXITCODE -ne 0) { throw 'LEEWAY_KMD_FIVE_REAL_OBJECTS_BUILD_FAILED' }
+          & ./native/windows/mcdm/compile-kernel-all-objects.ps1
+          if ($LASTEXITCODE -ne 0) { throw 'LEEWAY_KMD_ALL_ELEVEN_REAL_OBJECTS_BUILD_FAILED' }
       - name: Compile entire original D3D12 software compute UMD into 26 objects
         shell: pwsh
         run: |
@@ -56,8 +56,8 @@ jobs:
       - name: Assert compile-only output, never a signed or installed driver
         shell: pwsh
         run: |
-          $obj1 = @(Get-ChildItem (Join-Path $env:TEMP 'leeway-mcdm-five-kernel-objects') -Filter '*.obj')
+          $obj1 = @(Get-ChildItem (Join-Path $env:TEMP 'leeway-mcdm-all11-kmd-objects') -Filter '*.obj')
           $obj2 = @(Get-ChildItem (Join-Path $env:TEMP 'leeway-mcdm-umd26-objects') -Filter '*.obj')
-          if ($obj1.Count -ne 5 -or $obj2.Count -ne 26) { throw 'LEEWAY_REAL_31_MODULE_OBJECT_COUNT_MISMATCH' }
-          Write-Host 'LEEWAY_KERNEL_5_UMD_26_SOURCE_BUILD_PASS'
+          if ($obj1.Count -ne 11 -or $obj2.Count -ne 26) { throw 'LEEWAY_REAL_37_MODULE_OBJECT_COUNT_MISMATCH' }
+          Write-Host 'LEEWAY_KERNEL_11_UMD_26_SOURCE_BUILD_PASS'
           Write-Host 'LEEWAY_WINDOWS_GPU_REGISTRATION_NOT_TESTED; KMD_NOT_LINKED; UMD_NOT_LINKED; DRIVER_NOT_INSTALLED'
