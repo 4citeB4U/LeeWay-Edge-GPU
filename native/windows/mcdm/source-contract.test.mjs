@@ -18,14 +18,16 @@ import {resolve,dirname,join,extname} from 'node:path';
 import {fileURLToPath} from 'node:url';
 const root=resolve(dirname(fileURLToPath(import.meta.url)),'../../../third_party/microsoft-graphics-driver-samples');
 const refs=new Map([
- ['license.txt','06ce9969082147ee4593605f37203cd0f5b3aee84f1c4a75f181d57c124b4cda'],
- ['compute-only-sample/coskmd/CosKmdSoftAdapter.cpp','41bf2f89e412f969e25f627becf286e6c38c799f17d449f6f6f404f11245d515'],
- ['compute-only-sample/coskmd/CosKmdDdi.cpp','029f9a959b2de97f5f738063633656f5ff614d0b1e44b5d0377eef6d15d3225b'],
- ['compute-only-sample/cosumd12/CosUmd12.cpp','f63c0c7962a1a372a9f2f91f3d1d3bddf7b8095a090a64eb27fa14d3940bf5b0'],
- ['compute-only-sample/cosumd12/CosUmd12Adapter.cpp','b087b2ca8d0bef371945527fc95ac8d43f3f34bef23a831e6bca8eb67fcdf653'],
- ['compute-only-sample/cosdriver/cos.inf','31bdc358bc352494f8c22403a08732f218fccf75246795902bd5d66c0dde7ee3']
+ ['license.txt','a456dc1858714c8321194d25881919f7a0a42407ac1f384739417035fd367d21'],
+ ['compute-only-sample/coskmd/CosKmdSoftAdapter.cpp','ccf025b7171c8296aa1d139b05d291d5e68ad29b3c9b431cd3bc833dd347f159'],
+ ['compute-only-sample/coskmd/CosKmdDdi.cpp','7a349db96a7fecf65c57166ae56edb8ecbfa62156cd222c97a4a3e17507194c6'],
+ ['compute-only-sample/cosumd12/CosUmd12.cpp','db499024babfca62146fa6969097733c7f887c0612a556c1391b426ffa2f0bec'],
+ ['compute-only-sample/cosumd12/CosUmd12Adapter.cpp','2229a17b9512357444b6888f00f504dfb63541a282baa06624a6f579b29d48b0'],
+ ['compute-only-sample/cosdriver/cos.inf','ba73821b5fd45f12472efeeba73e57f145883f31aec3b9fc27dcaba9c7b2cde6']
 ]);
-const sha=p=>createHash('sha256').update(readFileSync(p)).digest('hex');
+// Windows checkouts may expand LF to CRLF. Compare canonical Git LF bytes,
+// preserving strict source identity across Windows and Linux platforms.
+const sha=p=>createHash('sha256').update(readFileSync(p,'utf8').replace(/\r\n/g,'\n'),'utf8').digest('hex');
 function walk(dir){
  const result=[];
  for(const name of readdirSync(dir)){
