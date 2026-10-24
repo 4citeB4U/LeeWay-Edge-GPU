@@ -42,6 +42,12 @@ The previously missing native DXGI-PnP probe is now implemented in native/window
 
 Still unfinished: actual software-only WDDM KMD with mandatory callbacks; functional D3D UMD; host-memory lease/submit/fence semantics under LDWMD and Veritas; legitimate Windows software-device instance and signed installation package; isolated driver-test deployment; actual LeeWay DXGI enumeration and same-adapter execution/readback.
 
+## Windows Direct3D 11 user-mode driver entry point — October 24, 2026
+
+The Windows SDK typed `OpenAdapter10_2(D3D10DDIARG_OPENADAPTER*)` interface now compiles into a native LeeWay D3D11 user-mode driver DLL, and an independent Windows process verifies that the real export can be dynamically loaded. Its entry point refuses an adapter because the matching WDDM kernel device, supported version table and required CreateDevice/resource callbacks do not yet exist. It is source and ABI progress, not a functional user-mode graphics driver or an OS-registered GPU.
+
+The previous LeeWay software framebuffer and pointer-free command queue remain the intended user-mode execution backend. They are not executed by Windows Direct3D through the new DLL, and are not proof of same-adapter execution. The full WDDM KMD/UMD contract, protected owner admission, isolated Windows installation and qualified receipts remain open.
+
 ## Windows registration requirements (not yet achieved)
 
 Windows recognizing a **general-purpose GPU adapter** is *not* the same as recognizing a service, custom PnP software device, Direct3D WARP, an indirect display/monitor, or a signed INF with no functional driver.

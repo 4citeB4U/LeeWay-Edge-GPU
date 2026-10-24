@@ -1,0 +1,40 @@
+# LEEWAY HEADER — DO NOT REMOVE
+# REGION: LEEWAY.EDGE_GPU.NATIVE.WINDOWS.D3D11_UMD
+# TAG: LEEWAY_WINDOWS_REAL_D3D11_UMD_ABI_BUILD
+# WHO: Creator-authorized LeeWay GPU engineering.
+# WHAT: Compile real Microsoft D3D11 UMD ABI and test fail-closed export.
+# WHEN: 2026-10-24. WHERE: GitHub Windows runner.
+# WHY: Reject fake Windows GPU adapters before they could open.
+# HOW: Native SDK types, MSVC, LoadLibrary, GetProcAddress, CTest.
+# AUTHORITY: ABI/source-test only; no driver install. LICENSE: LeeWay.
+name: LeeWay Direct3D 11 UMD ABI
+on:
+  pull_request:
+    paths:
+      - 'native/windows/d3d11-umd/**'
+      - '.github/workflows/leeway-d3d11-umd.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'native/windows/d3d11-umd/**'
+      - '.github/workflows/leeway-d3d11-umd.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  windows-umd-abi:
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure Windows SDK UMD types
+        run: cmake -S native/windows/d3d11-umd -B build/d3d11-umd -G "Visual Studio 17 2022" -A x64
+      - name: Compile typed OpenAdapter10_2 Windows DLL
+        run: cmake --build build/d3d11-umd --config Release
+      - name: Reject unsupported D3D11 adapter admission and verify export
+        run: ctest --test-dir build/d3d11-umd -C Release --output-on-failure
+      - name: Check only UMD source was created
+        shell: pwsh
+        run: |
+          if (Test-Path native/windows/d3d11-umd/*.inf) { throw 'UNQUALIFIED_INF_INCLUDED' }
+          if (Test-Path native/windows/d3d11-umd/*.sys) { throw 'UNQUALIFIED_KERNEL_DRIVER_INCLUDED' }
+          Write-Host 'UMD_ABI_TESTED_NO_OS_DRIVER_INSTALLED'
