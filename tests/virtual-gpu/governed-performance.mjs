@@ -22,6 +22,33 @@ const expectedAnswer = option('--expected') ?? process.env.LEEWAY_GPU_BENCH_EXPE
 const timeoutMs = Number(process.env.LEEWAY_GPU_BENCH_TIMEOUT_MS ?? 600000);
 const digestPattern = /^[a-f0-9]{64}$/;
 const idPattern = /^[A-Za-z0-9][A-Za-z0-9_.:/-]{0,159}$/;
+const formulaControllerCoverage = {
+  formula: 'LEEWAY-FORMULA-v1.0',
+  source: {
+    repository: '4citeB4U/Leeway-formula-live',
+    path: 'docs/equations/COMPUTE-HARDWARE.md',
+    sourceGitBlobSha: '14e8ca04f8ee88b35987dba8d982ba13c98e1b52'
+  },
+  executionState: 'NOT_EXECUTED',
+  mappingState: 'NOT_QUALIFIED',
+  mappingNote: 'Formula runtime-state-v1 defines a generic Q,V,H,R,S,L input. Raw model timing fields are not mapped to the controller dimensions; no approved GPU-controller mapping or scale set is bound by this benchmark.',
+  controllers: [
+    {equation: 'I-07', name: 'prompt-prefill', dimensions: ['tokens', 'compute', 'io', 'ttft', 'batch', 'interference'],
+      rawInstrumentation: ['promptTokens', 'prefillMs', 'modelGraphFirstTokenReadyMs'], notMeasuredRawFields: ['clientTimeToFirstTokenMs'],
+      mappedDimensions: [], notYetInstrumentedDimensions: ['io', 'batch', 'interference']},
+    {equation: 'I-08', name: 'memory-movement', dimensions: ['hbmRead', 'hbmWrite', 'hostCopy', 'stall', 'footprint', 'bytesPerToken'],
+      rawInstrumentation: [], mappedDimensions: [], notYetInstrumentedDimensions: ['hbmRead', 'hbmWrite', 'hostCopy', 'stall', 'footprint', 'bytesPerToken']},
+    {equation: 'I-09', name: 'kv-cache', dimensions: ['capacity', 'growth', 'fragmentation', 'eviction', 'miss', 'allocation'],
+      rawInstrumentation: [], mappedDimensions: [], notYetInstrumentedDimensions: ['capacity', 'growth', 'fragmentation', 'eviction', 'miss', 'allocation']},
+    {equation: 'I-10', name: 'scheduling', dimensions: ['depth', 'wait', 'arrivalService', 'hol', 'batch', 'slo'],
+      rawInstrumentation: [], mappedDimensions: [], notYetInstrumentedDimensions: ['depth', 'wait', 'arrivalService', 'hol', 'batch', 'slo']},
+    {equation: 'I-11', name: 'interconnect', dimensions: ['bandwidth', 'collective', 'syncWait', 'straggler', 'bytes', 'topology'],
+      rawInstrumentation: [], mappedDimensions: [], notYetInstrumentedDimensions: ['bandwidth', 'collective', 'syncWait', 'straggler', 'bytes', 'topology']},
+    {equation: 'I-12', name: 'decode', dimensions: ['tpot', 'bandwidth', 'bytesPerToken', 'kvRead', 'batch', 'overhead'],
+      rawInstrumentation: ['decodeMs', 'decodeTokensPerSecond', 'decodeModelSteps', 'decodeVisibleTokens', 'tokenTimings'],
+      mappedDimensions: [], notYetInstrumentedDimensions: ['bandwidth', 'bytesPerToken', 'kvRead', 'batch', 'overhead']}
+  ]
+};
 const report = {
   schema: 'leeway.gpu.governed-performance.v1',
   startedAt: new Date().toISOString(),
@@ -30,6 +57,7 @@ const report = {
   comparisonProviderUsed: false,
   voiceFabricChanged: false,
   productionAcceptanceClaimed: false,
+  formulaControllerCoverage,
   generationAttempted: false,
   runs: [],
   outcome: 'NOT_STARTED'
