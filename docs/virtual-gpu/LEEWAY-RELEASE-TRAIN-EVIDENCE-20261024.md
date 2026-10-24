@@ -6,6 +6,11 @@ Product identity: LeeWay Edge GPU, `leeway.gpu.service`
 Execution identity: LeeWay-owned quantized WGSL graph, with explicitly qualified LeeWay software providers and optional platform adapters.
 This document records source merges and evidence. It does not create grants, waive protected gates, or enable live dispatch.
 
+### Protected installation inventory — Agent-Lee read-only
+The existing `inspectG37InstalledScopeInventory` source inspected `ProgramData/LeeWay/C3/GpuTask` without reading private keys or modifying any instance. It found 11 protected instance directories, seven readable `trust.json` records, seven claiming `OWNER_GOVERNED_C3_GPU_DIAGNOSTIC_V1`, and **zero** claiming the separate software scope `OWNER_GOVERNED_C3_SOFTWARE_GPU_COMPUTE_V1`. This is read-only metadata, not proof that the diagnostic enrollments currently authorize anything. `productionAdmissionAuthorized:false` remains enforced.
+
+A canonical software-inference Veritas identity therefore cannot be manufactured by registering the old hardware diagnostic signer. The existing software-only installer path and separate-host Veritas reviewer require their own source-pin, custody, enrollment, and signed work-order qualification; the Learning Ledger readback capability likewise cannot be promoted into canonical writer admission without verified POST and ledger evidence.
+
 ## Follow-up mainline integration — 2026-10-24
 - Runtime Fabric [PR #81](https://github.com/4citeB4U/Leeway-Runtime-Fabric/pull/81) merged `repair/floating-agent-interaction` (including merged GPU inference Runtime #80) into Runtime `main` at **`123388e120bdffcb45f2e5ee7fd1b1c3dea87894`**. Five GitHub workflows PASS: Portable GPU Runtime binding, Persistent Workplane Proof, Continuum Curved Hierarchy, Continuum Sphere UI and Model Calibration Domain.
 - Isolated Agent-Lee source checks before merge: **54/54** targeted inference/LDWMD/Receipt tests and **74/74** G27-G38 protected-source authority tests PASS. Five conflicts reconciled: source pin checkout attributes, union of both workplane workflow suites, VRAM deferred-failure status, Receipt HTTP 503 invalid-chain enforcement and matching regression.
