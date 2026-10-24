@@ -22,6 +22,16 @@ Model identity and Agent Lee identity are separate. The product is model-, OS-, 
 - The Windows read-only PnP diagnostic was tightened so a friendly device name and VideoController alone do not count as WDDM recognition. Real LeeWay driver service and DXGI-PnP/LUID correlation are required before any native discovery claim; independent submission/readback and Veritas evidence remain separate gates.
 - GitHub Actions workflow compiles this native code on Windows and Linux and retains the Windows test-only DLL. It does not sign or install a driver.
 
+## WDK kernel-source integration checkpoint
+
+The native Windows driver directory now includes `native/windows/wddm/leeway-wddm-bootstrap.c`, compiled against **the actual installed WDK `dispmprt.h` DXGKDDI function signatures** with MSVC `/kernel /W4 /WX`. The build produced a checked x64 `.obj`, not a driver. The existing operating-system graphics subsystem was not touched.
+
+The fail-closed kernel entry point intentionally returns `STATUS_NOT_SUPPORTED` before `DxgkInitialize`, and refuses every `DxgkDdiAddDevice` request. This is not a working driver, does not have mandatory WDDM DDIs, has no UMD, `.sys`, `.inf`, enrolled PnP software device, certificate or OS registration. It must remain non-installable until those capabilities are complete and verified on an isolated test host.
+
+The WDK document `native/windows/wddm/README.md` maintains the follow-on kernel/user driver requirements and compile command. Its static tests enforce that missing driver interfaces cannot be misrepresented as a functioning GPU. Windows 11 Home on the main Agent-Lee host exposes neither the Hyper-V Manager command set nor a ready independent driver-test VM, so no risky live display-stack installation is attempted.
+
+**Driver model selection:** For Windows apps requiring a native display/graphics adapter, full WDDM KMD+UMD is the admission target. Microsoft's MCDM `ComputeAccelerator` class can be researched for a separate compute-only device, but its enumeration is not proof of a general-purpose Direct3D display GPU. Neither route may replace LeeWay Runtime Fabric, Formula, original LDWMD, Veritas or the ledger chain.
+
 ## Windows registration requirements (not yet achieved)
 
 Windows recognizing a **general-purpose GPU adapter** is *not* the same as recognizing a service, custom PnP software device, Direct3D WARP, an indirect display/monitor, or a signed INF with no functional driver.
