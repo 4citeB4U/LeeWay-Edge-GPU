@@ -48,6 +48,14 @@ The Windows SDK typed `OpenAdapter10_2(D3D10DDIARG_OPENADAPTER*)` interface now 
 
 The previous LeeWay software framebuffer and pointer-free command queue remain the intended user-mode execution backend. They are not executed by Windows Direct3D through the new DLL, and are not proof of same-adapter execution. The full WDDM KMD/UMD contract, protected owner admission, isolated Windows installation and qualified receipts remain open.
 
+## Same-source UMD-to-LeeWay software command test (diagnostic only)
+
+The existing native Windows `leeway_d3d11_umd` DLL now supports an explicit compile-time test-only bridge, **OFF by default**, into the original LeeWay software graphics and request-bound command queue. The lab build performs real CPU rendering, packed readback and request/fence rejection through exports on the same DLL that also exposes the authentic `OpenAdapter10_2` ABI. The normal Direct3D adapter entry point still refuses opening because neither the WDDM KMD nor real D3D11 device callbacks exist.
+
+Local Agent-Lee evidence: default OFF build passes 1/1 native tests with no diagnostic bridge exports; lab ON build passes 4/4 native tests including a 4×4 frame, 16 independently verified pixels and one completed fence, while invalid/mismatched requests fail closed. This is no longer just a standalone renderer smoke test, but **it remains a laboratory entry point and not OS-submitted Direct3D work**. No GPU board, vendor accelerator or external inference provider is used by this software compute.
+
+The diagnostic flag and caller-supplied 32-byte request digest are not a protected owner grant. The production execution path still requires the original LDWMD host-memory lease, canonical Formula binding, Veritas PRE/POST, Continuum readback, Receipt Ledger and Learning Ledger evidence for one immutable request. The Windows OS registration lane independently still requires the functioning KMD/UMD pair, signed device enumeration and a real OS API dispatch/readback qualification.
+
 ## Windows registration requirements (not yet achieved)
 
 Windows recognizing a **general-purpose GPU adapter** is *not* the same as recognizing a service, custom PnP software device, Direct3D WARP, an indirect display/monitor, or a signed INF with no functional driver.
