@@ -45,7 +45,7 @@ $buildArgs = @(
     ("/p:IntDir=$intArg")
 )
 $previousCl = $env:CL
-$env:CL = if ($previousCl) { ($previousCl + ' /DDBG=0').Trim() } else { '/DDBG=0' }
+$env:CL = if ($previousCl) { ($previousCl + ' /DDBG=0 /wd4996').Trim() } else { '/DDBG=0 /wd4996' }
 try {
     & $msbuild @buildArgs
     $buildExitCode = $LASTEXITCODE
