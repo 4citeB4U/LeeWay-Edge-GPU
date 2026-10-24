@@ -34,12 +34,16 @@ const formulaControllerCoverage = {
   mappingNote: 'Formula runtime-state-v1 defines a generic Q,V,H,R,S,L input. Raw model timing fields are not mapped to the controller dimensions; no approved GPU-controller mapping or scale set is bound by this benchmark.',
   controllers: [
     {equation: 'I-07', name: 'prompt-prefill', dimensions: ['tokens', 'compute', 'io', 'ttft', 'batch', 'interference'],
-      rawInstrumentation: ['promptTokens', 'prefillMs', 'modelGraphFirstTokenReadyMs'], notMeasuredRawFields: ['clientTimeToFirstTokenMs'],
+      rawInstrumentation: ['promptTokens', 'prefillMs', 'modelGraphFirstTokenReadyMs', 'tokenTimings'], notMeasuredRawFields: ['clientTimeToFirstTokenMs'],
       mappedDimensions: [], notYetInstrumentedDimensions: ['io', 'batch', 'interference']},
     {equation: 'I-08', name: 'memory-movement', dimensions: ['hbmRead', 'hbmWrite', 'hostCopy', 'stall', 'footprint', 'bytesPerToken'],
-      rawInstrumentation: [], mappedDimensions: [], notYetInstrumentedDimensions: ['hbmRead', 'hbmWrite', 'hostCopy', 'stall', 'footprint', 'bytesPerToken']},
+      rawInstrumentation: ['modelWeightUploadBytes', 'pagedEmbeddingUploadBytes', 'trackedBufferLiveBytes', 'trackedBufferPeakBytes', 'admittedBufferBudgetBytes'],
+      instrumentationScope: 'LeeWay model uploads and operator allocator accounting; does not measure HBM traffic, driver staging, or physical VRAM.',
+      mappedDimensions: [], notYetInstrumentedDimensions: ['hbmRead', 'hbmWrite', 'hostCopy', 'stall', 'bytesPerToken']},
     {equation: 'I-09', name: 'kv-cache', dimensions: ['capacity', 'growth', 'fragmentation', 'eviction', 'miss', 'allocation'],
-      rawInstrumentation: [], mappedDimensions: [], notYetInstrumentedDimensions: ['capacity', 'growth', 'fragmentation', 'eviction', 'miss', 'allocation']},
+      rawInstrumentation: ['kvCacheReservedBytes', 'kvCacheCapacityTokens', 'kvCachePositionsProcessed'],
+      instrumentationScope: 'Fixed LeeWay KV allocation and observed positions; no fragmentation, eviction, miss, or per-step growth counters.',
+      mappedDimensions: [], notYetInstrumentedDimensions: ['growth', 'fragmentation', 'eviction', 'miss']},
     {equation: 'I-10', name: 'scheduling', dimensions: ['depth', 'wait', 'arrivalService', 'hol', 'batch', 'slo'],
       rawInstrumentation: [], mappedDimensions: [], notYetInstrumentedDimensions: ['depth', 'wait', 'arrivalService', 'hol', 'batch', 'slo']},
     {equation: 'I-11', name: 'interconnect', dimensions: ['bandwidth', 'collective', 'syncWait', 'straggler', 'bytes', 'topology'],
@@ -143,7 +147,20 @@ function validateExecution(result, requestId) {
     timing.tokenTimings.length === timing.promptTokens + timing.decodeModelSteps, 'GPU_TOKEN_TIMINGS_INCOMPLETE');
   requireValue(timing.decodeVisibleTokens === 0 ? timing.decodeTokensPerSecond === null :
     Number.isFinite(timing.decodeTokensPerSecond) && timing.decodeTokensPerSecond > 0, 'GPU_DECODE_RATE_INVALID');
-  return {evidence, timing};
+  const telemetry=result?.performanceTelemetry;
+  requireValue(telemetry?.schema==='leeway.gpu.raw-performance-telemetry.v1'&&
+    telemetry.scope==='LEEWAY_OPERATOR_ALLOCATOR_AND_MODEL_GRAPH_COUNTERS_NOT_PHYSICAL_HARDWARE_COUNTERS_OR_FORMULA_MAPPING',
+    'GPU_RAW_TELEMETRY_SCHEMA_INVALID');
+  for(const key of ['modelWeightUploadBytes','pagedEmbeddingUploadBytes','encodedDispatchCount','trackedBufferLiveBytes',
+    'trackedBufferPeakBytes','admittedBufferBudgetBytes','kvCacheReservedBytes','kvCacheCapacityTokens','kvCachePositionsProcessed'])
+    requireValue(Number.isSafeInteger(telemetry[key])&&telemetry[key]>=0,`GPU_RAW_TELEMETRY_${key.toUpperCase()}_INVALID`);
+  requireValue(telemetry.modelWeightUploadBytes>0&&telemetry.encodedDispatchCount>0&&
+    telemetry.trackedBufferPeakBytes>=telemetry.trackedBufferLiveBytes&&
+    telemetry.admittedBufferBudgetBytes>=telemetry.trackedBufferPeakBytes&&
+    telemetry.kvCachePositionsProcessed===timing.promptTokens+timing.decodeModelSteps&&
+    telemetry.kvCacheCapacityTokens>=telemetry.kvCachePositionsProcessed,
+    'GPU_RAW_TELEMETRY_INCONSISTENT');
+  return {evidence, timing, telemetry};
 }
 
 try {
@@ -219,7 +236,7 @@ try {
     report.generationAttempted = true;
     const result = await request('/v1/generate', {method: 'POST', body: {modelId, prompt, requestId, maxNewTokens}});
     const fullRequestMs = performance.now() - started;
-    const {evidence, timing} = validateExecution(result, requestId);
+    const {evidence, timing, telemetry} = validateExecution(result, requestId);
     const modelIdentity = Object.fromEntries(['modelSha256', 'tokenizerSha256', 'implementationSha256']
       .map(key => [key, evidence[key]]));
     if (benchmarkModelIdentity && Object.keys(modelIdentity).some(key => modelIdentity[key] !== benchmarkModelIdentity[key]))
@@ -244,6 +261,7 @@ try {
       visibleOutputTokens: timing.visibleOutputTokens,
       decodeModelSteps: timing.decodeModelSteps,
       decodeTokensPerSecond: timing.decodeTokensPerSecond,
+      rawPerformanceTelemetry: telemetry,
       exactExpectedAnswer: exact,
       expectedAnswerObserved: exact || tokenMatch,
       responseText: result.text,

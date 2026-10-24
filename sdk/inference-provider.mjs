@@ -41,6 +41,21 @@ function validateModelGraphTimings(value,{promptTokens,visibleOutputTokens}){
     fail('GPU_PROVIDER_PERFORMANCE_EVIDENCE_INCOMPLETE');
   return structuredClone(value);
 }
+function validatePerformanceTelemetry(value){
+  const integerFields=['modelWeightUploadBytes','pagedEmbeddingUploadBytes','encodedDispatchCount',
+    'trackedBufferLiveBytes','trackedBufferPeakBytes','admittedBufferBudgetBytes','kvCacheReservedBytes',
+    'kvCacheCapacityTokens','kvCachePositionsProcessed'];
+  if(value?.schema!=='leeway.gpu.raw-performance-telemetry.v1'||
+    value.scope!=='LEEWAY_OPERATOR_ALLOCATOR_AND_MODEL_GRAPH_COUNTERS_NOT_PHYSICAL_HARDWARE_COUNTERS_OR_FORMULA_MAPPING'||
+    integerFields.some(key=>!Number.isSafeInteger(value[key])||value[key]<0)||
+    value.modelWeightUploadBytes<1||value.encodedDispatchCount<1||
+    value.trackedBufferPeakBytes<value.trackedBufferLiveBytes||
+    value.admittedBufferBudgetBytes<value.trackedBufferPeakBytes||
+    value.kvCacheCapacityTokens<1||value.kvCachePositionsProcessed<1||
+    value.kvCachePositionsProcessed>value.kvCacheCapacityTokens)
+    fail('GPU_PROVIDER_PERFORMANCE_TELEMETRY_INCOMPLETE');
+  return structuredClone(value);
+}
 const freeze = value => { if (value && typeof value === 'object' && !Object.isFrozen(value)) {
   for (const child of Object.values(value)) freeze(child); Object.freeze(value);
 } return value; };
@@ -168,9 +183,10 @@ export function createLeeWayGpuInferenceProvider({models = [], platform, deviceI
     if (await inferenceHash(observed) !== e.resultHash) fail('GPU_PROVIDER_RESULT_HASH_MISMATCH');
     const modelGraphTimings=validateModelGraphTimings(result.modelGraphTimings,
       {promptTokens:inputTokens.length,visibleOutputTokens:result.outputIds.length});
+    const performanceTelemetry=validatePerformanceTelemetry(result.performanceTelemetry);
     return {serviceId: LEEWAY_GPU_PRODUCT.serviceId, modelId: request.modelId, backend: 'LEEWAY_GPU',
       requestId, sessionId, text: model.tokenizer.decode(result.outputIds), executionBinding: {...executionBinding},
-      execution: result.execution, modelGraphTimings, canonicalReceiptIssued: true};
+      execution: result.execution, modelGraphTimings, performanceTelemetry, canonicalReceiptIssued: true};
   }
   return Object.freeze({capabilities, activateModel, generate});
 }

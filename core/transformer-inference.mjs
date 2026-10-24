@@ -193,7 +193,7 @@ export class LeeWayTransformerSession{
   return (async()=>{
    const modelLoadState=this.loaded?'WARM_CACHED':'COLD_LOAD';
    const loadStarted=performance.now();await this.load(context);const modelLoadMs=performance.now()-loadStarted;
-   const graphStarted=performance.now();const output=[];let token;
+   const graphStarted=performance.now();const dispatchesAtStart=this.ops.dispatches;const output=[];let token;
    for(let i=0;i<task.inputIds.length;i++){if(context.signal?.aborted)throw Error('MODEL_CANCELLED');token=await this.token(task.inputIds[i],i,i===task.inputIds.length-1);}
    const prefillMs=performance.now()-graphStarted;
    const stop=new Set(this.meta['tokenizer.ggml.eos_token_ids']||[this.meta['tokenizer.ggml.eos_token_id']]);
@@ -217,7 +217,15 @@ export class LeeWayTransformerSession{
     graphAfterLoadMs,modelLoadAndGraphMs,
     promptTokens:task.inputIds.length,visibleOutputTokens:output.length,
     tokenTimings:this.tokenRecords.map(({position,commands,elapsedMs})=>({position,commands,elapsedMs}))};
+   const performanceTelemetry={schema:'leeway.gpu.raw-performance-telemetry.v1',
+    scope:'LEEWAY_OPERATOR_ALLOCATOR_AND_MODEL_GRAPH_COUNTERS_NOT_PHYSICAL_HARDWARE_COUNTERS_OR_FORMULA_MAPPING',
+    modelWeightUploadBytes:this.io.packedWeightBytes,pagedEmbeddingUploadBytes:this.io.pagedEmbeddingBytes,
+    encodedDispatchCount:this.ops.dispatches-dispatchesAtStart,
+    trackedBufferLiveBytes:this.ops.liveBytes,trackedBufferPeakBytes:this.ops.peakBytes,
+    admittedBufferBudgetBytes:this.ops.budget,kvCacheReservedBytes:this.memoryPlan.kvBytes,
+    kvCacheCapacityTokens:this.context,kvCachePositionsProcessed:this.tokenRecords.length};
    return {outputIds:output,stopToken:stop.has(token)?token:null,stopReason:stop.has(token)?'MODEL_END_TOKEN':'MAX_NEW_TOKENS',prefillTokens:task.inputIds.length,loadMs:modelLoadMs,totalInferenceMs:graphAfterLoadMs,modelGraphTimings,
+    performanceTelemetry,
     execution:'LEEWAY_QUANTIZED_WGSL_GRAPH',architecture:this.arch,layers:this.layers,contextLimit:this.context,records:this.tokenRecords,resources:this.ops.describe(),io:this.io,
     externalModelEngine:false,cpuNeuralMath:false,formulaRouting:'REQUIRED_HOST_FORMULA_RECEIPT',ldWmdAllocation:'HOST_ADMITTED_LEASE_ONLY',canonicalAcceptance:'PENDING_HOST_POST_GATE',textOnly:true};
   })();

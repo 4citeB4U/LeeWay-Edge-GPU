@@ -35,7 +35,12 @@ async function fixture({readiness = 'BOUND', qualificationChange, resultChange, 
           decodeMs:0,decodeModelSteps:0,decodeVisibleTokens:0,decodeStopTokens:0,decodeTokensPerSecond:null,
           graphAfterLoadMs:5,modelLoadAndGraphMs:17,
           promptTokens:input.plan.inputTokens.length,visibleOutputTokens:1,
-          tokenTimings:Array.from({length:input.plan.inputTokens.length},(_,position)=>({position,commands:8,elapsedMs:4}))}};
+          tokenTimings:Array.from({length:input.plan.inputTokens.length},(_,position)=>({position,commands:8,elapsedMs:4}))},
+        performanceTelemetry:{schema:'leeway.gpu.raw-performance-telemetry.v1',
+          scope:'LEEWAY_OPERATOR_ALLOCATOR_AND_MODEL_GRAPH_COUNTERS_NOT_PHYSICAL_HARDWARE_COUNTERS_OR_FORMULA_MAPPING',
+          modelWeightUploadBytes:4096,pagedEmbeddingUploadBytes:0,encodedDispatchCount:32,
+          trackedBufferLiveBytes:8192,trackedBufferPeakBytes:12288,admittedBufferBudgetBytes:16384,
+          kvCacheReservedBytes:2048,kvCacheCapacityTokens:128,kvCachePositionsProcessed:input.plan.inputTokens.length}};
       const requestHash = await inferenceHash(snapshotInferenceRequest({type: 'AI_INFERENCE',
         requestId: input.requestId, sessionId: input.sessionId, modelSha256: H, tokenizerSha256: J,
         implementationSha256: K, contextLimit: input.plan.contextLimit, maxNewTokens: input.plan.maxNewTokens,
@@ -97,6 +102,9 @@ test('authenticated client selection reaches existing graph and carries final au
   assert.equal(answer.modelGraphTimings.tokenTimings.length,answer.modelGraphTimings.promptTokens);
   assert.equal(answer.modelGraphTimings.tokenTimings[0].position,0);
   assert.equal(answer.modelGraphTimings.tokenTimings.at(-1).position,answer.modelGraphTimings.promptTokens-1);
+  assert.equal(answer.performanceTelemetry.modelWeightUploadBytes,4096);
+  assert.equal(answer.performanceTelemetry.trackedBufferPeakBytes,12288);
+  assert.equal(answer.performanceTelemetry.kvCachePositionsProcessed,answer.modelGraphTimings.promptTokens);
   assert.equal(answer.canonicalReceiptIssued, true); assert.equal(f.calls(), 1);
   assert.deepEqual(f.principalCalls, [{clientId: 'registered-client'}]);
 });
@@ -132,6 +140,17 @@ test('model graph timings must be present, bounded and covered by result evidenc
     result => result.modelGraphTimings.tokenTimings.pop()]) {
     const f = await fixture({resultChange}); await activate(f);
     await assert.rejects(generate(f), /PERFORMANCE_EVIDENCE_INCOMPLETE|RESULT_HASH_MISMATCH/);
+  }
+});
+test('raw performance telemetry must be complete, bounded by the admitted buffer budget, and present in result evidence', async () => {
+  for (const resultChange of [
+    result => delete result.performanceTelemetry,
+    result => result.performanceTelemetry.trackedBufferPeakBytes = Infinity,
+    result => result.performanceTelemetry.admittedBufferBudgetBytes = 1,
+    result => result.performanceTelemetry.kvCachePositionsProcessed++
+  ]) {
+    const f = await fixture({resultChange}); await activate(f);
+    await assert.rejects(generate(f), /PERFORMANCE_TELEMETRY_INCOMPLETE|RESULT_HASH_MISMATCH/);
   }
 });
 test('one client cannot generate through another client activation', async () => {
