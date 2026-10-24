@@ -21,6 +21,13 @@ int wmain(int argc,wchar_t** argv){
  if(!library){std::cerr<<"UMD_DLL_LOAD_FAILED\n";return 3;}
  auto fn=reinterpret_cast<OpenAdapterEntry>(GetProcAddress(library,"OpenAdapter10_2"));
  if(!fn){FreeLibrary(library);std::cerr<<"OPENADAPTER_EXPORT_MISSING\n";return 4;}
+ const bool hasLabSubmit=GetProcAddress(library,"LeeWayUmdLabSubmit")!=nullptr;
+ const bool hasLabReadback=GetProcAddress(library,"LeeWayUmdLabReadback")!=nullptr;
+#if defined(LEEWAY_UMD_LAB_EXPECTED)
+ if(!hasLabSubmit||!hasLabReadback){FreeLibrary(library);return 6;}
+#else
+ if(hasLabSubmit||hasLabReadback){FreeLibrary(library);return 7;}
+#endif
  const auto invalid=fn(nullptr);
  unsigned char fakeData[512]{};
  const auto declined=fn(fakeData);

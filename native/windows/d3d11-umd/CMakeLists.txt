@@ -23,3 +23,22 @@ target_compile_features(leeway_d3d11_umd_probe PRIVATE cxx_std_17)
 enable_testing()
 add_test(NAME LeeWayD3D11ActualOpenAdapterAbi
  COMMAND leeway_d3d11_umd_probe $<TARGET_FILE:leeway_d3d11_umd>)
+
+# Diagnostic-only test adapter to the existing LeeWay CPU renderer.
+# The default UMD DLL has NO diagnostic execution export or extra backend DLL.
+option(LEEWAY_ENABLE_UMD_LAB_BRIDGE "Build test-only LeeWay raster bridge; NEVER install as WDDM" OFF)
+if(LEEWAY_ENABLE_UMD_LAB_BRIDGE)
+ add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../software-gpu"
+   "${CMAKE_CURRENT_BINARY_DIR}/software-gpu")
+ target_compile_definitions(leeway_d3d11_umd_probe PRIVATE LEEWAY_UMD_LAB_EXPECTED=1)
+ target_sources(leeway_d3d11_umd PRIVATE leeway-umd-lab-bridge.cpp)
+ target_compile_definitions(leeway_d3d11_umd PRIVATE LEEWAY_UMD_LAB_BRIDGE=1)
+ target_link_libraries(leeway_d3d11_umd PRIVATE leeway_swgraphics)
+ add_custom_command(TARGET leeway_d3d11_umd POST_BUILD
+  COMMAND ${CMAKE_COMMAND} -E copy_if_different
+   $<TARGET_FILE:leeway_swgraphics> $<TARGET_FILE_DIR:leeway_d3d11_umd>)
+ add_executable(leeway_umd_lab_bridge_test leeway-umd-lab-bridge.test.cpp)
+ target_compile_features(leeway_umd_lab_bridge_test PRIVATE cxx_std_17)
+ add_test(NAME LeeWayUmdLabRealSoftwareRenderer
+  COMMAND leeway_umd_lab_bridge_test $<TARGET_FILE:leeway_d3d11_umd>)
+endif()

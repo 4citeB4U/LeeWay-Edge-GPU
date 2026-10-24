@@ -1,22 +1,24 @@
 # LEEWAY HEADER — DO NOT REMOVE
 # REGION: LEEWAY.EDGE_GPU.NATIVE.WINDOWS.D3D11_UMD
-# TAG: LEEWAY_WINDOWS_REAL_D3D11_UMD_ABI_BUILD
+# TAG: LEEWAY_UMD_DISABLED_BY_DEFAULT_AND_LAB_REUSE_CI
 # WHO: Creator-authorized LeeWay GPU engineering.
-# WHAT: Compile real Microsoft D3D11 UMD ABI and test fail-closed export.
-# WHEN: 2026-10-24. WHERE: GitHub Windows runner.
-# WHY: Reject fake Windows GPU adapters before they could open.
-# HOW: Native SDK types, MSVC, LoadLibrary, GetProcAddress, CTest.
-# AUTHORITY: ABI/source-test only; no driver install. LICENSE: LeeWay.
+# WHAT: Test real D3D11 UMD entry point and native LeeWay software engine reuse.
+# WHEN: 2026-10-24. WHERE: GitHub Windows CI.
+# WHY: Never ship unqualified diagnostic execution as a production OS GPU.
+# HOW: Separate default and lab builds, OS DLL loading, independent framebuffer tests.
+# AUTHORITY: TEST_ONLY. LICENSE: LeeWay.
 name: LeeWay Direct3D 11 UMD ABI
 on:
   pull_request:
     paths:
       - 'native/windows/d3d11-umd/**'
+      - 'native/windows/software-gpu/**'
       - '.github/workflows/leeway-d3d11-umd.yml'
   push:
     branches: [main]
     paths:
       - 'native/windows/d3d11-umd/**'
+      - 'native/windows/software-gpu/**'
       - '.github/workflows/leeway-d3d11-umd.yml'
   workflow_dispatch:
 permissions:
@@ -24,17 +26,22 @@ permissions:
 jobs:
   windows-umd-abi:
     runs-on: windows-2022
+    strategy:
+      fail-fast: false
+      matrix:
+        lab: ['OFF', 'ON']
     steps:
       - uses: actions/checkout@v4
-      - name: Configure Windows SDK UMD types
-        run: cmake -S native/windows/d3d11-umd -B build/d3d11-umd -G "Visual Studio 17 2022" -A x64
-      - name: Compile typed OpenAdapter10_2 Windows DLL
-        run: cmake --build build/d3d11-umd --config Release
-      - name: Reject unsupported D3D11 adapter admission and verify export
+      - name: Configure native Windows UMD and optional diagnostics
+        run: cmake -S native/windows/d3d11-umd -B build/d3d11-umd -G "Visual Studio 17 2022" -A x64 -DLEEWAY_ENABLE_UMD_LAB_BRIDGE=${{ matrix.lab }}
+      - name: Compile typed OpenAdapter10_2 and original LeeWay engine
+        run: cmake --build build/d3d11-umd --config Release --parallel 2
+      - name: Verify real native DLL, request-scoped execution and rejection
         run: ctest --test-dir build/d3d11-umd -C Release --output-on-failure
-      - name: Check only UMD source was created
+      - name: Verify source-only non-installable driver scope
         shell: pwsh
         run: |
+          node --test native/windows/d3d11-umd/source-safety.test.mjs
           if (Test-Path native/windows/d3d11-umd/*.inf) { throw 'UNQUALIFIED_INF_INCLUDED' }
           if (Test-Path native/windows/d3d11-umd/*.sys) { throw 'UNQUALIFIED_KERNEL_DRIVER_INCLUDED' }
-          Write-Host 'UMD_ABI_TESTED_NO_OS_DRIVER_INSTALLED'
+          Write-Output "LEEWAY_UMD_TESTED_LAB_MODE=${{ matrix.lab }} NO_OS_DRIVER_INSTALLED"
