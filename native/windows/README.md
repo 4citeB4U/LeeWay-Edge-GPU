@@ -19,6 +19,10 @@
 5. Require real OS enumeration, graphics API adapter discovery, and compute correctness before reporting native recognition in LeeWay Diagnostics Matrix. Keep physical GPU and LeeWay compute engine separate, with measured telemetry only.
 6. Obtain separate owner approval before any host driver installation. No unapproved GitHub publication.
 
+## Direct3D 11 UMD runtime ABI (compile-only)
+
+`d3d11-umd/` provides the real Windows SDK typed `OpenAdapter10_2` export, compiled as a DLL and verified through direct OS loading. It returns `DXGI_ERROR_UNSUPPORTED` because there is no corresponding working KMD/device or full Direct3D device table. This is ABI integration, **not** an operational Direct3D driver; see its README and the OS registration checkpoint.
+
 ## WDDM typed kernel source (compile-only)
 
 `wddm/` now contains the source of a Windows graphics-kernel `DriverEntry` and WDK-typed DDIs, compiled with MSVC `/kernel /W4 /WX`. It intentionally refuses `DxgkDdiAddDevice` and returns `STATUS_NOT_SUPPORTED`, with no `.sys`, INF or install action. **This is not a working WDDM driver or Windows-recognized GPU**. The real KMD/UMD and isolated installation path remain open. See `wddm/README.md` and `docs/virtual-gpu/SOFTWARE-GPU-OS-REGISTRATION.md`.
