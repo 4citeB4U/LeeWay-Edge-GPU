@@ -19,6 +19,10 @@
 5. Require real OS enumeration, graphics API adapter discovery, and compute correctness before reporting native recognition in LeeWay Diagnostics Matrix. Keep physical GPU and LeeWay compute engine separate, with measured telemetry only.
 6. Obtain separate owner approval before any host driver installation. No unapproved GitHub publication.
 
+## First-party CPU software graphics core (2026-10-24)
+
+`software-gpu/` now contains a compiled native BGRA8 renderer with caller-owned buffers, clipped rectangles, opaque blit and readback, plus Windows/Linux CMake tests. It is a practical graphics backend dependency for a future LeeWay WDDM software GPU driver, **not** an OS-registered adapter and **not** an alternate LDWMD, Formula, Runtime or Veritas authority. See `docs/virtual-gpu/SOFTWARE-GPU-OS-REGISTRATION.md`.
+
 ## Current code
 
 `adapter-contract.mjs` and its tests are read-only admission logic, **not a graphics driver**. Synthetic passing tests are not evidence of native adapter recognition. `d3d12-compute/prototype.cpp` and `build-run.ps1` prove only their measured D3D12 command submission/readback on the individually identified physical adapters recorded in the generated evidence. They are not WDDM driver source, a distinct LeeWay OS GPU, or Runtime Fabric-authorized provider integration.

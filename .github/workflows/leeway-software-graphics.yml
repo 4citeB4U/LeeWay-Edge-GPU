@@ -1,0 +1,58 @@
+# LEEWAY HEADER — DO NOT REMOVE
+# REGION: LEEWAY.EDGE_GPU.NATIVE.SOFTWARE_GRAPHICS_CI
+# TAG: LEEWAY_SWGPU_NATIVE_RENDER_BUILD_GATE
+# WHO: Creator-authorized LeeWay software GPU engineering.
+# WHAT: Compile and execute borrowed-buffer software rendering on Windows and Linux.
+# WHEN: 2026-10-24. WHERE: LeeWay-Edge-GPU GitHub Actions.
+# WHY: Real native source qualification independent of GPU hardware or WDDM claims.
+# HOW: CMake and ctest. AUTHORITY: Native renderer only; OS GPU enumeration not claimed.
+# LICENSE: LeeWay.
+name: LeeWay software graphics native
+on:
+  pull_request:
+    paths:
+      - 'native/windows/software-gpu/**'
+      - '.github/workflows/leeway-software-graphics.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'native/windows/software-gpu/**'
+      - '.github/workflows/leeway-software-graphics.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native-software-renderer:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-2022
+            generator: Visual Studio 17 2022
+            architecture: x64
+          - os: ubuntu-24.04
+            generator: Unix Makefiles
+            architecture: ""
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure
+        shell: bash
+        run: |
+          if [ -n "${{ matrix.architecture }}" ]; then
+            cmake -S native/windows/software-gpu -B build/swgraphics -G "${{ matrix.generator }}" -A "${{ matrix.architecture }}"
+          else
+            cmake -S native/windows/software-gpu -B build/swgraphics -G "${{ matrix.generator }}"
+          fi
+      - name: Compile real LeeWay software renderer
+        run: cmake --build build/swgraphics --config Release --parallel 2
+      - name: Verify direct readback and buffer protections
+        run: ctest --test-dir build/swgraphics -C Release --output-on-failure
+      - name: Preserve Windows test DLL (not a WDDM driver)
+        if: matrix.os == 'windows-2022'
+        uses: actions/upload-artifact@v4
+        with:
+          name: leeway-swgraphics-native-windows-test-only
+          path: build/swgraphics/Release/leeway_swgraphics.dll
+          if-no-files-found: error
+          retention-days: 7
