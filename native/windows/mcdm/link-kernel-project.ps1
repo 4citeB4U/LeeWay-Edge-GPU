@@ -43,8 +43,15 @@ $buildArgs = @(
     ("/p:OutDir=$outArg"),
     ("/p:IntDir=$intArg")
 )
-& $msbuild @buildArgs
-if ($LASTEXITCODE -ne 0) { throw "LEEWAY_KMD_PROJECT_LINK_FAILED: MSBuild exit $LASTEXITCODE" }
+$previousCl = $env:CL
+$env:CL = if ($previousCl) { ($previousCl + ' /DDBG=0').Trim() } else { '/DDBG=0' }
+try {
+    & $msbuild @buildArgs
+    $buildExitCode = $LASTEXITCODE
+} finally {
+    $env:CL = $previousCl
+}
+if ($buildExitCode -ne 0) { throw "LEEWAY_KMD_PROJECT_LINK_FAILED: MSBuild exit $buildExitCode" }
 
 $images = @(Get-ChildItem -LiteralPath $output -Filter '*.sys' -File -Recurse)
 if ($images.Count -ne 1) { throw "LEEWAY_KMD_IMAGE_COUNT_MISMATCH: expected one unsigned .sys under TEMP, got $($images.Count)" }
