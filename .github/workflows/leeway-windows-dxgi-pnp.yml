@@ -1,0 +1,51 @@
+# LEEWAY HEADER — DO NOT REMOVE
+# REGION: LEEWAY.EDGE_GPU.NATIVE.WINDOWS.DXGI_PNP
+# TAG: LEEWAY_NATIVE_WINDOWS_PNP_GRAPHICS_IDENTITY_CI
+# WHO: Creator-authorized LeeWay GPU engineering.
+# WHAT: Build and run native DXGI-PnP-LUID read-only probe.
+# WHEN: 2026-10-24. WHERE: GitHub Windows CI.
+# WHY: A service name must not be accepted as GPU adapter registration.
+# HOW: Windows SDK CMake + actual PnP/D3DKMT/DXGI query.
+# AUTHORITY: Diagnostics only; no driver load, signing or installation.
+# LICENSE: LeeWay.
+name: LeeWay native Windows adapter correlation
+on:
+  pull_request:
+    paths:
+      - 'native/windows/dxgi-probe/**'
+      - 'native/windows/adapter-contract*'
+      - 'tests/virtual-gpu/windows-adapter-qualification.mjs'
+      - '.github/workflows/leeway-windows-dxgi-pnp.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'native/windows/dxgi-probe/**'
+      - 'native/windows/adapter-contract*'
+      - 'tests/virtual-gpu/windows-adapter-qualification.mjs'
+      - '.github/workflows/leeway-windows-dxgi-pnp.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native-dxgi-pnp:
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build read-only native DXGI and PnP correlation
+        run: cmake -S native/windows/dxgi-probe -B build/dxgi-pnp -G "Visual Studio 17 2022" -A x64
+      - name: Compile actual Windows SDK device mapping
+        run: cmake --build build/dxgi-pnp --config Release
+      - name: Verify adapter classification negative cases
+        run: node --test native/windows/adapter-contract.test.mjs
+      - name: Query Windows native adapter identity without installing drivers
+        shell: pwsh
+        run: |
+          $env:LEEWAY_DXGI_PNP_PROBE = (Resolve-Path build/dxgi-pnp/Release/leeway_dxgi_pnp.exe).Path
+          node --test native/windows/dxgi-probe/native-probe-contract.test.mjs
+          node tests/virtual-gpu/windows-adapter-qualification.mjs "$env:RUNNER_TEMP/leeway-adapter-diagnostic.json"
+          $r = Get-Content "$env:RUNNER_TEMP/leeway-adapter-diagnostic.json" -Raw | ConvertFrom-Json
+          if ($r.outcome -eq 'NATIVE_ADAPTER_NOT_VERIFIED') {
+            Write-Output 'NO_LEEWAY_OS_ADAPTER: accurate expected result for CI runner'
+          } elseif ($r.outcome -eq 'NATIVE_ADAPTER_ENUMERATED_UNQUALIFIED') {
+            Write-Output 'LEEWAY_ADAPTER_PRESENT_UNQUALIFIED: requires independent same-adapter execution and protected Veritas'
+          } else { throw 'UNKNOWN_ADAPTER_CLASSIFICATION' }

@@ -27,7 +27,7 @@ export function classifyWindowsAdapter(observation){
     String(s.State).toLowerCase()==='running' &&
     valid(s.PathName)&&/\.sys(?:\s|$|")/i.test(s.PathName)&&
     equal(s.PNPDeviceID,d.InstanceId)) &&
-  dxgi.some(x=>equal(x.PNPDeviceID,d.InstanceId)&&
+  dxgi.some(x=>x.NativeMapping===true&&equal(x.PNPDeviceID,d.InstanceId)&&
     valid(x.AdapterLuid)&&/leeway/i.test(x.Description??'')));
  const nativeRecognized=recognized.length>0;
  return Object.freeze({

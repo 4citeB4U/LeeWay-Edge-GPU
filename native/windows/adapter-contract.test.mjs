@@ -16,7 +16,7 @@ const display={FriendlyName:'LeeWay Edge GPU',Status:'OK',InstanceId:'TEST-INSTA
 const video={Name:'LeeWay Edge GPU',PNPDeviceID:'TEST-INSTANCE',DriverVersion:'1'};
 const service={Name:'LeeWaySoftwareGpu',State:'Running',
  PathName:'C:\\Windows\\System32\\drivers\\leeway-gpu.sys',PNPDeviceID:'TEST-INSTANCE'};
-const dxgi={Description:'LeeWay Edge GPU',PNPDeviceID:'TEST-INSTANCE',AdapterLuid:'0-AABB'};
+const dxgi={Description:'LeeWay Edge GPU',PNPDeviceID:'TEST-INSTANCE',AdapterLuid:'0-AABB',NativeMapping:true};
 const synthetic={pnp:[display],video:[video],services:[service],dxgi:[dxgi]};
 test('empty system cannot claim Windows GPU',()=>{
  const r=classifyWindowsAdapter({pnp:[],video:[],services:[],dxgi:[]});
@@ -44,6 +44,9 @@ test('running service with no DXGI adapter cannot claim GPU',()=>{
 test('wrong-instance service or DXGI adapter does not cross-admit',()=>{
  assert.equal(classifyWindowsAdapter({...synthetic,services:[{...service,PNPDeviceID:'OTHER'}]}).nativeRecognized,false);
  assert.equal(classifyWindowsAdapter({...synthetic,dxgi:[{...dxgi,PNPDeviceID:'OTHER'}]}).nativeRecognized,false);
+});
+test('manually constructed DXGI observation with no native mapping is rejected',()=>{
+ assert.equal(classifyWindowsAdapter({...synthetic,dxgi:[{...dxgi,NativeMapping:false}]}).nativeRecognized,false);
 });
 test('synthetic multi-source observation stays unqualified pending independent command proof',()=>{
  const r=classifyWindowsAdapter(synthetic);
