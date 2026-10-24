@@ -20,7 +20,7 @@ on:
     paths:
       - 'native/windows/mcdm/**'
       - 'third_party/microsoft-graphics-driver-samples/**'
-      - '.github/workflows/leeway-mcdm-31-real-object-build.yml'
+      - '.github/workflows/leeway-mcdm-37-real-object-build.yml'
   workflow_dispatch:
 permissions:
   contents: read
