@@ -1,0 +1,62 @@
+# LEEWAY HEADER — DO NOT REMOVE
+# REGION: LEEWAY.EDGE_GPU.NATIVE.WINDOWS.MCDM_SOURCE
+# TAG: LEEWAY_MCDM_ORIGINAL_MIT_SOURCE_QUALIFICATION_ONLY
+# WHO: Owner-authorized LeeWay driver engineering.
+# WHAT: Verify complete Microsoft source custody and non-installable state.
+# WHEN: 2026-10-24. WHERE: GitHub CI.
+# WHY: Build an auditable genuine OS-driver starting point without fake certification.
+# HOW: Integrity tests; Win32 driver build prerequisite checks only.
+# AUTHORITY: SOURCE_ONLY. LICENSE: MIT source plus existing LeeWay terms.
+name: LeeWay compute-only Windows driver source
+on:
+  pull_request:
+    paths:
+      - 'native/windows/mcdm/**'
+      - 'third_party/microsoft-graphics-driver-samples/**'
+      - '.github/workflows/leeway-mcdm-source-qualification.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'native/windows/mcdm/**'
+      - 'third_party/microsoft-graphics-driver-samples/**'
+      - '.github/workflows/leeway-mcdm-source-qualification.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  vendor-source-custody:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-2022, ubuntu-24.04]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify exact MIT source SHA hashes and no installable driver binaries
+        run: node --test native/windows/mcdm/source-contract.test.mjs
+  windows-toolchain-compatibility-only:
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+      - name: Read real VS/WDK prerequisites without installing or signing a driver
+        shell: pwsh
+        run: |
+          $kit = Join-Path ${env:ProgramFiles(x86)} 'Windows Kits/10/Include/10.0.26100.0'
+          $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio/Installer/vswhere.exe'
+          if (-not (Test-Path $kit) -or -not (Test-Path $vswhere)) {
+            Write-Output 'LEEWAY_MCDM_DRIVER_BUILD_BLOCKED: matching Windows SDK/VS missing'
+            exit 0
+          }
+          $vs = & $vswhere -latest -products '*' -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+          if (-not $vs) { throw 'NO_MSVC_FOUND' }
+          $msbuild = Join-Path $vs 'MSBuild/Current/Bin/MSBuild.exe'
+          $sample = (Resolve-Path 'third_party/microsoft-graphics-driver-samples/compute-only-sample').Path
+          foreach ($project in @('coskmd/CosKmd.vcxproj','cosumd12/cosumd12.vcxproj')) {
+            $p = Join-Path $sample $project
+            & $msbuild $p /nologo /t:PrepareForBuild /p:Configuration=Release /p:Platform=x64 /p:WindowsTargetPlatformVersion=10.0.26100.0 /p:PlatformToolset=v143 /p:SignMode=Off /v:minimal
+            if ($LASTEXITCODE -ne 0) { throw ('MCDM_SOURCE_RETARGET_CONFIG_FAILED: '+$project) }
+          }
+          Write-Output 'LEEWAY_MCDM_SOURCE_RETARGET_CONFIG_PASS; NOT_KMD_COMPILED; NOT_UMD_COMPILED; NOT_INSTALLED'

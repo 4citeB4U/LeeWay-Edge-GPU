@@ -56,6 +56,14 @@ Local Agent-Lee evidence: default OFF build passes 1/1 native tests with no diag
 
 The diagnostic flag and caller-supplied 32-byte request digest are not a protected owner grant. The production execution path still requires the original LDWMD host-memory lease, canonical Formula binding, Veritas PRE/POST, Continuum readback, Receipt Ledger and Learning Ledger evidence for one immutable request. The Windows OS registration lane independently still requires the functioning KMD/UMD pair, signed device enumeration and a real OS API dispatch/readback qualification.
 
+## Compute-only Windows driver source — actual Microsoft KMD/UMD reference
+
+The LeeWay GPU repository now retains the original MIT-licensed **Microsoft Compute Only Sample Driver** at `third_party/microsoft-graphics-driver-samples/compute-only-sample` (pinned upstream `de4a2161991eda254013da6c18226f5ea06e4a9c`). Unlike a dummy adapter name, this contains real Windows graphics-kernel miniport callbacks, software command processing, and a Direct3D 12 user-mode driver source. Source custody, upstream hashes, and original licensing are independently checked by `native/windows/mcdm/source-contract.test.mjs`.
+
+**No LeeWay driver registration has occurred.** The upstream example INF references `ACPI\\COMPUTEONLYSAMPLE` and cannot be used as LeeWay's device. Its Windows 2018-era WDK project settings are not production compatible with the Agent-Lee VS 2022/WDK 26100 toolchain. Re-targeted project preparation passes locally; actual KMD/UMD code compilation fails on missing WDK driver project integration, architecture/WPP-generated requirements, and modern SDK source incompatibilities. Driver installation, signing, paging and request-bound execution remain unverified.
+
+See `native/windows/mcdm/README.md` for exact source identity, present compile errors and release conditions. The existing software-renderer / WinHTTP Windows application SDK paths are preserved; they are **not** a substitute for the OS driver.
+
 ## Windows registration requirements (not yet achieved)
 
 Windows recognizing a **general-purpose GPU adapter** is *not* the same as recognizing a service, custom PnP software device, Direct3D WARP, an indirect display/monitor, or a signed INF with no functional driver.

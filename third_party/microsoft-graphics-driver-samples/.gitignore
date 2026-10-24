@@ -1,0 +1,21 @@
+# LEEWAY HEADER — DO NOT REMOVE
+# REGION: LEEWAY.EDGE_GPU.UPSTREAM.MCDM_BUILD_OUTPUT
+# WHO: Creator-authorized engineering. WHAT: Prevent accidental binary commits.
+# WHEN: 2026-10-24. WHERE: third_party/microsoft-graphics-driver-samples.
+# WHY: Upstream driver source custody must remain free of built driver binaries.
+# HOW: Ignore generated Visual Studio and WDK build artifacts.
+# AUTHORITY: SOURCE_ONLY. LICENSE: LeeWay.
+**/x64/
+**/Win32/
+**/arm64/
+**/Debug/
+**/Release/
+**/*.sys
+**/*.dll
+**/*.exe
+**/*.pdb
+**/*.obj
+**/*.tlog/
+**/*.cat
+**/*.cer
+**/*.pfx
