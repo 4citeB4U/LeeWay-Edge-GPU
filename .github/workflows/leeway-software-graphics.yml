@@ -50,6 +50,8 @@ jobs:
         run: ctest --test-dir build/swgraphics -C Release --output-on-failure
       - name: Verify adapter identities reject device names and foreign evidence
         run: node --test native/windows/adapter-contract.test.mjs
+      - name: Verify WDDM bootstrap stays fail closed (source only)
+        run: node --test native/windows/wddm/bootstrap-contract.test.mjs
       - name: Preserve Windows test DLL (not a WDDM driver)
         if: matrix.os == 'windows-2022'
         uses: actions/upload-artifact@v4

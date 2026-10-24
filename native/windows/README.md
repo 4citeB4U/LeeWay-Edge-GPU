@@ -19,6 +19,10 @@
 5. Require real OS enumeration, graphics API adapter discovery, and compute correctness before reporting native recognition in LeeWay Diagnostics Matrix. Keep physical GPU and LeeWay compute engine separate, with measured telemetry only.
 6. Obtain separate owner approval before any host driver installation. No unapproved GitHub publication.
 
+## WDDM typed kernel source (compile-only)
+
+`wddm/` now contains the source of a Windows graphics-kernel `DriverEntry` and WDK-typed DDIs, compiled with MSVC `/kernel /W4 /WX`. It intentionally refuses `DxgkDdiAddDevice` and returns `STATUS_NOT_SUPPORTED`, with no `.sys`, INF or install action. **This is not a working WDDM driver or Windows-recognized GPU**. The real KMD/UMD and isolated installation path remain open. See `wddm/README.md` and `docs/virtual-gpu/SOFTWARE-GPU-OS-REGISTRATION.md`.
+
 ## First-party CPU software graphics core (2026-10-24)
 
 `software-gpu/` now contains a compiled native BGRA8 renderer with caller-owned buffers, clipped rectangles, opaque blit and readback, plus Windows/Linux CMake tests. It is a practical graphics backend dependency for a future LeeWay WDDM software GPU driver, **not** an OS-registered adapter and **not** an alternate LDWMD, Formula, Runtime or Veritas authority. See `docs/virtual-gpu/SOFTWARE-GPU-OS-REGISTRATION.md`.
