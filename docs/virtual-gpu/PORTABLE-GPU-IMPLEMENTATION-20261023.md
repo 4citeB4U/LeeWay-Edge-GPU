@@ -11,6 +11,9 @@ Each target must qualify its implementation and physical execution separately.
 - `contracts/standalone-product-acceptance.mjs`: application installation,
   lifecycle, public API and complete governed request evidence are assessed
   separately from optional native OS device enumeration.
+- `sdk/transformer-buffer-plan.mjs`: model-shaped WebGPU buffer lifetimes,
+  bounded weight chunking, usage flags, read budget, supplied-device limits,
+  peak byte budget and immutable plan digest. The planner grants no authority.
 - `sdk/model-resource.mjs`: bounded device-local model bytes, cancellation,
   cleanup and independent request-bound range verification. The graph can
   consume an admitted native/file/Blob resource without a localhost server.
@@ -60,7 +63,26 @@ as pinned resources before synchronous operator borrowing. The encoder receives
 the exact admitted buffers. It cannot expand the bank or borrow from another
 device. Returning a buffer queues clearing; closing unpins and evicts through
 the original database. API release is not an independent measurement of OS VRAM
-reclamation. Exact model buffer-spec planning remains a deployment dependency.
+reclamation. The exact buffer plan is now represented by the SDK; a trusted
+Runtime profile must still bind that digest, source, context, device limits and
+permit budget before the database admits buffers.
+
+## Device-local model admission and Model Hub consumer
+
+Runtime Fabric now has a Node source adapter for explicitly configured GGUF
+files. It captures file path, digest, tensor layout and owner receipt callbacks
+at trusted startup, opens independent read-only handles, hashes the complete
+file in bounded blocks, and rechecks each tensor range through the second handle.
+Receipts bind client, request, session, model, resource and evidence digest.
+Overlapping layouts, excessive hash indexes, mutation, cancellation and cleanup
+failures are rejected or retained for recovery.
+
+The Model Hub consumer preserves complete per-request execution evidence and
+requires deployment-supplied authentication, qualification verification and
+result verification. It serializes inference against model switching and
+propagates caller disconnect cancellation into the GPU request. The ordinary
+command-line deployment does not invent protected verifier callbacks; its GPU
+provider remains unavailable until trusted startup supplies them.
 
 ## Current scope and remaining acceptance
 
@@ -99,9 +121,14 @@ Signed envelopes are snapshotted before asynchronous verification. A resource
 cleanup failure retains ownership and supports an explicit startup recovery
 retry. Reads remain closed during that retry. Regression checks cover both.
 
-On the Windows development host, the portable GPU suite passed 238 tests, the
-existing software guardrail suite passed 56, and Apple source/target checks
-passed 8. Runtime binding plus original LDWMD and GPU consumer integration passed
-25 tests. Device Bridge passed 41 tests with both reviewed source roots supplied,
-including the complete HTTP-to-Runtime diagnostic fixture. These are contract
-checks, not downloaded-model benchmarks or physical-device certification.
+On the Windows development host, the portable GPU suite passed 244 tests, the
+software guardrail suite passed 56, and the source check passed 23 files.
+Runtime binding, model-source verification, LDWMD planning/admission, original
+LDWMD lease handling and GPU consumer integration passed 68 tests. Device Bridge
+passed 41 tests with both reviewed source roots supplied, including the complete
+HTTP-to-Runtime diagnostic fixture. Model Hub passed 36 tests, including
+generation serialization and disconnect cancellation. The model buffer planner
+also matched allocation lifetimes for synthetic Qwen2, quantized Qwen2 and Gemma4
+graphs on a diagnostic fake device. These are contract and allocation-trace
+checks, not downloaded-model inference benchmarks or physical-device
+certification.
