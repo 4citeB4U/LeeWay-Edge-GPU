@@ -32,6 +32,16 @@ The WDK document `native/windows/wddm/README.md` maintains the follow-on kernel/
 
 **Driver model selection:** For Windows apps requiring a native display/graphics adapter, full WDDM KMD+UMD is the admission target. Microsoft's MCDM `ComputeAccelerator` class can be researched for a separate compute-only device, but its enumeration is not proof of a general-purpose Direct3D display GPU. Neither route may replace LeeWay Runtime Fabric, Formula, original LDWMD, Veritas or the ledger chain.
 
+## Actual Windows PnP/DXGI native correlation — October 24, 2026
+
+A first-party native x64 diagnostic now compiles and runs using Windows SetupAPI, D3DKMT adapter-name mapping and DXGI enumeration. It resolves each present display device's real PnP instance ID, obtains the associated graphics-kernel adapter LUID and compares it to the DXGI LUID. The existing LeeWay classification then requires the same instance in VideoController and a running LeeWay .sys driver before even reporting Windows adapter enumeration.
+
+Live Agent-Lee result: three genuine OS adapters correlated, all NOT LeeWay: NVIDIA 0-153A3, Intel 0-14EA3, Microsoft Basic Render 0-15314. These identities are diagnostics, not LeeWay execution providers. LeeWay registered adapter count remains zero; its classification stays NATIVE_ADAPTER_NOT_VERIFIED.
+
+The previously missing native DXGI-PnP probe is now implemented in native/windows/dxgi-probe, with a Windows CMake build, test and GitHub workflow. The existing tests/virtual-gpu/windows-adapter-qualification.mjs consumes its output through LEEWAY_DXGI_PNP_PROBE and fails closed if no native executable is supplied. It does not register, simulate, spoof, or install a GPU device. It cannot authorize production work.
+
+Still unfinished: actual software-only WDDM KMD with mandatory callbacks; functional D3D UMD; host-memory lease/submit/fence semantics under LDWMD and Veritas; legitimate Windows software-device instance and signed installation package; isolated driver-test deployment; actual LeeWay DXGI enumeration and same-adapter execution/readback.
+
 ## Windows registration requirements (not yet achieved)
 
 Windows recognizing a **general-purpose GPU adapter** is *not* the same as recognizing a service, custom PnP software device, Direct3D WARP, an indirect display/monitor, or a signed INF with no functional driver.
