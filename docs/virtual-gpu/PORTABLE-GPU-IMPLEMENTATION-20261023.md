@@ -21,6 +21,13 @@ Each target must qualify its implementation and physical execution separately.
   `capabilities`, `activateModel` and `generate` for the existing Device Bridge
   GPU service and Model Hub contract. Constructor dependencies are trusted
   startup bindings; client requests cannot supply their own provider.
+- The model graph emits request/result-hash-bound timing evidence for model
+  load, prompt prefill / time to first token, post-first-token decode, total
+  graph time, token counts and per-step command counts/durations. The SDK
+  validates and returns it only after source/result identity and final evidence
+  pass. These graph timings exclude authorization and post-execution commit;
+  callers must separately time the full application request. They do not by
+  themselves attest which physical device executed the graph.
 - `core/gpu.bootstrap.js`: WebGPU initialization can use an explicit host
   provider and safely reports unavailable where no such provider exists.
 - The existing Apple source defines iPhone/iPad and macOS application targets
@@ -121,7 +128,7 @@ Signed envelopes are snapshotted before asynchronous verification. A resource
 cleanup failure retains ownership and supports an explicit startup recovery
 retry. Reads remain closed during that retry. Regression checks cover both.
 
-On the Windows development host, the portable GPU suite passed 244 tests, the
+On the Windows development host, the portable GPU suite passed 245 tests, the
 software guardrail suite passed 56, and the source check passed 23 files.
 Runtime binding, model-source verification, LDWMD planning/admission, original
 LDWMD lease handling and GPU consumer integration passed 68 tests. Device Bridge

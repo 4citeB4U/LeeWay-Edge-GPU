@@ -194,12 +194,20 @@ export class LeeWayTransformerSession{
   return (async()=>{
    await this.load(context);const start=performance.now();const output=[];let token;
    for(let i=0;i<task.inputIds.length;i++){if(context.signal?.aborted)throw Error('MODEL_CANCELLED');token=await this.token(task.inputIds[i],i,i===task.inputIds.length-1);if(i%8===0)console.log('PREFILL '+(i+1)+'/'+task.inputIds.length);}
+   const prefillMs=performance.now()-start;
+   const decodeStarted=performance.now();
    const stop=new Set(this.meta['tokenizer.ggml.eos_token_ids']||[this.meta['tokenizer.ggml.eos_token_id']]);
    for(let j=0;j<max;j++){
     if(context.signal?.aborted)throw Error('MODEL_CANCELLED');if(stop.has(token))break;output.push(token);console.log('TOKEN '+j+' '+token);
     if(j+1<max)token=await this.token(token,task.inputIds.length+j,true);
    }
-   return {outputIds:output,stopToken:stop.has(token)?token:null,stopReason:stop.has(token)?'MODEL_END_TOKEN':'MAX_NEW_TOKENS',prefillTokens:task.inputIds.length,loadMs:this.loadMs,totalInferenceMs:performance.now()-start,
+   const decodeMs=performance.now()-decodeStarted,totalInferenceMs=performance.now()-start;
+   const modelGraphTimings={schema:'leeway.gpu.model-graph-timings.v1',
+    scope:'MODEL_GRAPH_AFTER_LOAD_EXCLUDES_AUTHORIZATION_POST_VERITAS_AND_CONTINUUM_COMMIT',
+    modelLoadMs:this.loadMs,prefillMs,timeToFirstTokenMs:prefillMs,decodeMs,totalInferenceMs,
+    promptTokens:task.inputIds.length,visibleOutputTokens:output.length,
+    tokenTimings:this.tokenRecords.map(({position,commands,elapsedMs})=>({position,commands,elapsedMs}))};
+   return {outputIds:output,stopToken:stop.has(token)?token:null,stopReason:stop.has(token)?'MODEL_END_TOKEN':'MAX_NEW_TOKENS',prefillTokens:task.inputIds.length,loadMs:this.loadMs,totalInferenceMs,modelGraphTimings,
     execution:'LEEWAY_QUANTIZED_WGSL_GRAPH',architecture:this.arch,layers:this.layers,contextLimit:this.context,records:this.tokenRecords,resources:this.ops.describe(),io:this.io,
     externalModelEngine:false,cpuNeuralMath:false,formulaRouting:'REQUIRED_HOST_FORMULA_RECEIPT',ldWmdAllocation:'HOST_ADMITTED_LEASE_ONLY',canonicalAcceptance:'PENDING_HOST_POST_GATE',textOnly:true};
   })();

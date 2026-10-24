@@ -16,6 +16,19 @@ import {canonicalGpuSigningBytes} from './signing-json.mjs';
 
 const identity = value => typeof value === 'string' && /^[A-Za-z0-9][A-Za-z0-9_.:/-]{0,159}$/.test(value);
 const fail = code => { throw Object.assign(new Error(code), {code}); };
+function validateModelGraphTimings(value,{promptTokens,visibleOutputTokens}){
+  const numeric=['modelLoadMs','prefillMs','timeToFirstTokenMs','decodeMs','totalInferenceMs'];
+  if(value?.schema!=='leeway.gpu.model-graph-timings.v1'||
+    value.scope!=='MODEL_GRAPH_AFTER_LOAD_EXCLUDES_AUTHORIZATION_POST_VERITAS_AND_CONTINUUM_COMMIT'||
+    numeric.some(key=>!Number.isFinite(value[key])||value[key]<0||value[key]>600000)||
+    value.promptTokens!==promptTokens||value.visibleOutputTokens!==visibleOutputTokens||
+    !Array.isArray(value.tokenTimings)||value.tokenTimings.length>65||
+    value.tokenTimings.some(item=>!Number.isSafeInteger(item?.position)||item.position<0||
+      !Number.isSafeInteger(item?.commands)||item.commands<0||
+      !Number.isFinite(item?.elapsedMs)||item.elapsedMs<0||item.elapsedMs>600000))
+    fail('GPU_PROVIDER_PERFORMANCE_EVIDENCE_INCOMPLETE');
+  return structuredClone(value);
+}
 const freeze = value => { if (value && typeof value === 'object' && !Object.isFrozen(value)) {
   for (const child of Object.values(value)) freeze(child); Object.freeze(value);
 } return value; };
@@ -141,9 +154,11 @@ export function createLeeWayGpuInferenceProvider({models = [], platform, deviceI
         evidenceKeys.some(key => !isSha256(e?.[key]))) fail('GPU_PROVIDER_EXECUTION_EVIDENCE_INCOMPLETE');
     const {executionBinding, claimBoundary, selectedDispatcherPath, ...observed} = result;
     if (await inferenceHash(observed) !== e.resultHash) fail('GPU_PROVIDER_RESULT_HASH_MISMATCH');
+    const modelGraphTimings=validateModelGraphTimings(result.modelGraphTimings,
+      {promptTokens:inputTokens.length,visibleOutputTokens:result.outputIds.length});
     return {serviceId: LEEWAY_GPU_PRODUCT.serviceId, modelId: request.modelId, backend: 'LEEWAY_GPU',
       requestId, sessionId, text: model.tokenizer.decode(result.outputIds), executionBinding: {...executionBinding},
-      execution: result.execution, canonicalReceiptIssued: true};
+      execution: result.execution, modelGraphTimings, canonicalReceiptIssued: true};
   }
   return Object.freeze({capabilities, activateModel, generate});
 }

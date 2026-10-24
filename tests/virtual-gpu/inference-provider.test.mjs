@@ -27,7 +27,12 @@ async function fixture({readiness = 'BOUND', qualificationChange, resultChange, 
       calls++;
       if (execution) return execution(input);
       const observed = {execution: 'LEEWAY_QUANTIZED_WGSL_GRAPH', externalModelEngine: false,
-        cpuNeuralMath: false, outputIds: [modelPlan.metadata['tokenizer.ggml.tokens'].indexOf('4')]};
+        cpuNeuralMath: false, outputIds: [modelPlan.metadata['tokenizer.ggml.tokens'].indexOf('4')],
+        modelGraphTimings:{schema:'leeway.gpu.model-graph-timings.v1',
+          scope:'MODEL_GRAPH_AFTER_LOAD_EXCLUDES_AUTHORIZATION_POST_VERITAS_AND_CONTINUUM_COMMIT',
+          modelLoadMs:12,prefillMs:4,timeToFirstTokenMs:4,decodeMs:1,totalInferenceMs:5,
+          promptTokens:input.plan.inputTokens.length,visibleOutputTokens:1,
+          tokenTimings:[{position:input.plan.inputTokens.length-1,commands:8,elapsedMs:4}]}};
       const requestHash = await inferenceHash(snapshotInferenceRequest({type: 'AI_INFERENCE',
         requestId: input.requestId, sessionId: input.sessionId, modelSha256: H, tokenizerSha256: J,
         implementationSha256: K, contextLimit: input.plan.contextLimit, maxNewTokens: input.plan.maxNewTokens,
@@ -80,6 +85,9 @@ test('runtime unavailable denies activation and starts no model', async () => {
 test('authenticated client selection reaches existing graph and carries final audit evidence', async () => {
   const f = await fixture(); await activate(f); const answer = await generate(f);
   assert.equal(answer.text, '4'); assert.equal(answer.backend, 'LEEWAY_GPU');
+  assert.equal(answer.modelGraphTimings.totalInferenceMs,5);
+  assert(answer.modelGraphTimings.promptTokens>0);
+  assert.equal(answer.modelGraphTimings.tokenTimings[0].position,answer.modelGraphTimings.promptTokens-1);
   assert.equal(answer.canonicalReceiptIssued, true); assert.equal(f.calls(), 1);
   assert.deepEqual(f.principalCalls, [{clientId: 'registered-client'}]);
 });
@@ -102,6 +110,16 @@ test('missing ledger or altered source identity withholds the response', async (
     result => result.executionBinding.modelSha256 = K, result => result.executionBinding.requestHash = K,
     result => result.outputIds = [0]]) {
     const f = await fixture({resultChange}); await activate(f); await assert.rejects(generate(f), /EVIDENCE_INCOMPLETE|RESULT_HASH_MISMATCH/);
+  }
+});
+test('model graph timings must be present, bounded and covered by result evidence', async () => {
+  for (const resultChange of [
+    result => delete result.modelGraphTimings,
+    result => result.modelGraphTimings.totalInferenceMs = -1,
+    result => result.modelGraphTimings.promptTokens++,
+    result => result.modelGraphTimings.tokenTimings[0].elapsedMs = Infinity]) {
+    const f = await fixture({resultChange}); await activate(f);
+    await assert.rejects(generate(f), /PERFORMANCE_EVIDENCE_INCOMPLETE|RESULT_HASH_MISMATCH/);
   }
 });
 test('one client cannot generate through another client activation', async () => {
