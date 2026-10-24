@@ -21,7 +21,8 @@
                     "test:tensor": "node --test tests/virtual-gpu/tensor-unit.test.mjs",
                     "test:formula-binding":  "node tests/virtual-gpu/formula-binding-check.mjs",
                     "test:portable": "node --test contracts/*.test.mjs tests/virtual-gpu/governed-inference.test.mjs tests/virtual-gpu/model-resource.test.mjs tests/virtual-gpu/node-model-resource.test.mjs tests/virtual-gpu/inference-provider.test.mjs tests/virtual-gpu/tensor-unit.test.mjs tests/virtual-gpu/transformer-buffer-plan.test.mjs",
-                    "test:software": "node --test tests/virtual-gpu/software-cpu-host.test.mjs tests/virtual-gpu/software-square-locality.test.mjs tests/virtual-gpu/governed-software-compute.test.mjs tests/virtual-gpu/canonical-provider-readiness.test.mjs tests/virtual-gpu/canonical-formula-software-observation.test.mjs tests/virtual-gpu/software-workload-policy-candidate.test.mjs tests/virtual-gpu/g36-live-formula-ldwmd-guardrails.test.mjs"
+                    "test:software": "node --test tests/virtual-gpu/software-cpu-host.test.mjs tests/virtual-gpu/software-square-locality.test.mjs tests/virtual-gpu/governed-software-compute.test.mjs tests/virtual-gpu/canonical-provider-readiness.test.mjs tests/virtual-gpu/canonical-formula-software-observation.test.mjs tests/virtual-gpu/software-workload-policy-candidate.test.mjs tests/virtual-gpu/g36-live-formula-ldwmd-guardrails.test.mjs",
+                    "bench:governed": "node tests/virtual-gpu/governed-performance.mjs"
                 },
     "keywords":  [
                      "WebGPU",

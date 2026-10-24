@@ -35,6 +35,20 @@ The G2 candidate extends the existing WebGPU/CPU paths with:
 
 See [the G2 checkpoint](docs/virtual-gpu/TENSOR-G2-CHECKPOINT.md) and [reviewed evidence](qualification/tensor-g2/local-evidence.json) for measured results and source hashes. The earlier [G0 checkpoint](docs/virtual-gpu/LOCAL-BUILD-CHECKPOINT.md) records the execution-core repairs.
 
+## Governed model performance campaign
+
+Use the existing authenticated Device Bridge GPU service for model inference. This runner accepts only a loopback service URL, checks qualified model capability, activates the selected local model, and measures repeated `/v1/generate` requests. Each result must contain the LeeWay GPU execution identity and request-bound Formula, LDWMD, Continuum, Veritas, Receipt Ledger and Learning Ledger evidence. It never calls `runModel` directly, starts a model server, or contacts an outside inference provider. Missing Runtime/provider authority records a blocked run before inference.
+
+The service must expose the governed inference routes and be active for the qualified model. The historical listener that exposes only `/v1/status`, `/v1/manifest` and denied `/v1/execute` is not sufficient; the runner will stop before activation or generation when those bindings are absent.
+
+```powershell
+$env:LEEWAY_GPU_BENCH_SERVICE_URL = 'http://127.0.0.1:4178'
+$env:LEEWAY_GPU_BENCH_AUTHORIZATION = '<authorization from the existing local Device Bridge adapter>'
+$env:LEEWAY_GPU_BENCH_MODEL_ID = '<qualified local model id>'
+npm run bench:governed -- --runs 10 --max-new-tokens 8 --evidence C:\LeeWay-Evidence\gpu-run-01
+```
+
+The report separates whole-request latency from model-graph load, prefill, decode and token timing. First-token latency is reported as unavailable because this service endpoint returns a complete, non-streaming response. Correctness is checked against the supplied expected answer. The harness reports measured LeeWay execution only; it does not compare against another provider or certify production enrollment or platform coverage.
 ## Qualification boundaries
 
 Standalone product acceptance covers installation, public API, lifecycle, governed computation and application use. Native operating-system GPU enumeration has its own driver/API qualification. Platform target declarations and passing contract tests cannot establish physical device execution.
