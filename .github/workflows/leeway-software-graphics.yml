@@ -48,6 +48,8 @@ jobs:
         run: cmake --build build/swgraphics --config Release --parallel 2
       - name: Verify direct readback and buffer protections
         run: ctest --test-dir build/swgraphics -C Release --output-on-failure
+      - name: Verify adapter identities reject device names and foreign evidence
+        run: node --test native/windows/adapter-contract.test.mjs
       - name: Preserve Windows test DLL (not a WDDM driver)
         if: matrix.os == 'windows-2022'
         uses: actions/upload-artifact@v4

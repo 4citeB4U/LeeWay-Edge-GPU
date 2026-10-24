@@ -18,6 +18,8 @@ Model identity and Agent Lee identity are separate. The product is model-, OS-, 
 - The engine **borrows caller-owned memory spans**, so LDWMD can remain the memory owner in a future qualified binding. It never allocates VRAM, signs a grant, appends a ledger, or registers an OS device.
 - Checked allocation sizes, row stride, buffer overflow, overlapping source/destination, output capacity, and out-of-surface clipping. Each operation returns an explicit status.
 - Native test executable: independently checked pixel values, padding preservation, 36-byte readback, copy behavior, failure cases, and no hardware GPU path. `ctest` PASS.
+- Driver-facing command ABI v1 compiled in native code: 56-byte pointer-free command packets use numeric resource IDs, caller-provided SHA-256 request correlation, borrowed surfaces, complete preflight before mutation, a synchronous completion fence, and fence-checked readback. The request SHA field is **not an authorization signature**. Original LDWMD and qualified Runtime/Formula/Veritas still must admit and pin the actual allocations and execution. A future WDDM user-mode component must resolve these resource handles from approved leases; kernel-mode pointer passing is explicitly forbidden.
+- The Windows read-only PnP diagnostic was tightened so a friendly device name and VideoController alone do not count as WDDM recognition. Real LeeWay driver service and DXGI-PnP/LUID correlation are required before any native discovery claim; independent submission/readback and Veritas evidence remain separate gates.
 - GitHub Actions workflow compiles this native code on Windows and Linux and retains the Windows test-only DLL. It does not sign or install a driver.
 
 ## Windows registration requirements (not yet achieved)
