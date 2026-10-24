@@ -93,3 +93,18 @@ test('G39 release fails whenever any mandatory approval is not proven',()=>{
  assert.equal(m.releasePolicy.anyBlockedReleaseGateMeansNoProduction,true);
  assert.equal(m.productProductionReady,false);
 });
+test('G39 promotes a successful release into a persistent immutable LeeWay standard',()=>{
+ const lifecycle=m.releasePolicy.standardLifecycle;
+ assert.equal(lifecycle.promotionMode,'AUTOMATIC_AFTER_ALL_REQUIRED_GATES_AND_INDEPENDENT_VERITAS_PASS');
+ assert.equal(lifecycle.standardAuthority,'EXISTING_LEEWAY_STANDARDS_AND_RUNTIME_FABRIC_OWNERS');
+ assert.ok(lifecycle.promotionRequires.includes('persistent-service-restart-recovery=PASS'));
+ assert.ok(lifecycle.promotionRequires.includes('signed-immutable-release-manifest=PASS'));
+ assert.ok(lifecycle.releaseManifestBinds.includes('same-request-veritas-receipt-and-ledger-identities'));
+ assert.equal(lifecycle.successfulServiceDisposition,'KEEP_RUNNING_UNDER_QUALIFIED_SUPERVISOR');
+ assert.match(lifecycle.postPromotionChangePolicy,/NO_IN_PLACE_MUTATION/);
+ assert.equal(lifecycle.automaticPromotionMayCreateAuthority,false);
+ assert.equal(lifecycle.automaticPromotionMayBypassOwnerOrVeritas,false);
+ assert.equal(lifecycle.currentDisposition,'NOT_PROMOTED_REQUIRED_GATES_BLOCKED');
+ assert.equal(m.productProductionReady,false);
+ assert.equal(m.apiExecutionProductionReady,false);
+});

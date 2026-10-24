@@ -176,6 +176,31 @@ state-domain counts as proof of throughput or OS virtual-adapter status.
 The source-acceptance matrix is the **release decision record**, not a
 license to bypass the creator's original safety and evidence authorities.
 
+## Persistent standard promotion and lock
+
+When every required release gate has a genuine `PRODUCTION_PASS`, the
+same-request Veritas POST, Receipt Ledger readback, Learning Ledger admission
+and readback, Audit Triad, persistent-service restart/recovery check, and
+signed immutable release manifest all pass, promote that exact release
+automatically through the existing LeeWay Standards and Runtime Fabric owners.
+The manifest binds the repository revision, package/configuration digests,
+owner and provider identities, qualified platform adapters, model digests when
+used, same-request evidence identities, and rollback target.
+
+Keep the successfully qualified service running under its approved supervisor.
+The completed benchmark or acceptance runner must not shut that service down.
+Lock the qualified release as the active LeeWay standard: no in-place source,
+configuration, provider, or model change. A later change becomes a successor
+candidate and must pass the release gates before the active standard switches.
+If health or restart recovery fails, restart or roll back to the last verified
+standard and retain the failure evidence.
+
+Automatic promotion records and applies an already-authorized result; it does
+not create owner authority, signing keys, or Veritas approval. The current
+release remains **NOT PROMOTED** while any required gate is blocked. At this
+record's current state, protected authority, full same-request production
+execution, and the self-contained signed release are still blocked.
+
 ## G40 amendment — original CesiumJS and Three.js mathematics recovered
 
 The G39 original matrix-compute focus omitted existing external-to-GPU
