@@ -6,6 +6,14 @@ Product identity: LeeWay Edge GPU, `leeway.gpu.service`
 Execution identity: LeeWay-owned quantized WGSL graph, with explicitly qualified LeeWay software providers and optional platform adapters.
 This document records source merges and evidence. It does not create grants, waive protected gates, or enable live dispatch.
 
+## Follow-up mainline integration — 2026-10-24
+- Runtime Fabric [PR #81](https://github.com/4citeB4U/Leeway-Runtime-Fabric/pull/81) merged `repair/floating-agent-interaction` (including merged GPU inference Runtime #80) into Runtime `main` at **`123388e120bdffcb45f2e5ee7fd1b1c3dea87894`**. Five GitHub workflows PASS: Portable GPU Runtime binding, Persistent Workplane Proof, Continuum Curved Hierarchy, Continuum Sphere UI and Model Calibration Domain.
+- Isolated Agent-Lee source checks before merge: **54/54** targeted inference/LDWMD/Receipt tests and **74/74** G27-G38 protected-source authority tests PASS. Five conflicts reconciled: source pin checkout attributes, union of both workplane workflow suites, VRAM deferred-failure status, Receipt HTTP 503 invalid-chain enforcement and matching regression.
+- Reused new Device Bridge GPU service (reviewed service contract from merged PR #55) on staging loopback **127.0.0.1:4179** without replacing the existing installed service at 4178. `GET /v1/status`, `GET /v1/manifest` and `GET /v1/capabilities` returned HTTP 200; service identity is `leeway.gpu.service`, backend `LEEWAY_GPU`, and capability state `UNBOUND` (`modelInference:false`). This is a staging transport/product identity pass, not a qualified inference execution.
+- Read-only live Runtime admission checker still reported `INDEPENDENT_VERITAS_PROVIDER_UNREGISTERED` and `CANONICAL_LEARNING_LEDGER_PROVIDER_UNREGISTERED`. The registry contains historical `learning.ledger.readback` only, **not** canonical `learning.ledger.admission`. Original installed Veritas diagnostic signer and its D3D12 scope must not substitute software inference Veritas authorization. Existing cross-host PR #79 stage signer remains `SAMPLE_ONLY`.
+- **Protected runtime inference not activated.** No production root, issuer, Veritas, grant, key, ledger append, installer or evidence was fabricated. Activation requires separately qualified real provider enrollment and same-request PRE/POST/Continuum/ledgers, then approved clean restart/cutover.
+- Local staging port 4179 and E-drive paths are transient deployment observations, **not** source-controlled product constants or cross-platform limits.
+
 ## Live merge and deployment ledger — October 24, 2026
 This section supersedes the pre-merge draft states and head-only input revisions recorded below. Source code merge is not protected runtime enrollment.
 
