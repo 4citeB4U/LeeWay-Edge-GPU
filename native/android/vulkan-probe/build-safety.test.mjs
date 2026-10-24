@@ -1,0 +1,10 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+const root=new URL('.',import.meta.url);
+const cpp=readFileSync(new URL('main.cpp',root),'utf8');
+const cmake=readFileSync(new URL('CMakeLists.txt',root),'utf8');
+test('SPIR-V module uses aligned uint32_t storage',()=>{assert.match(cpp,/std::vector<uint32_t> words/);assert.match(cpp,/smci\.pCode=words\.data\(\)/);assert.doesNotMatch(cpp,/reinterpret_cast<const uint32_t\*>\(bytes\.data\(\)\)/)});
+test('buffer is initialized to a sentinel before GPU submission',()=>{const init=cpp.indexOf('std::memset(initial,0xFF');const submit=cpp.indexOf('vkQueueSubmit');assert.ok(init>0&&submit>init)});
+test('NDK target uses sysroot Vulkan library, not host Vulkan SDK',()=>{assert.match(cmake,/if\(NOT ANDROID\)/);assert.match(cmake,/find_library\(ANDROID_VULKAN_LIBRARY vulkan REQUIRED\)/);assert.match(cmake,/target_link_libraries\(leeway-g19-vulkan PRIVATE \$\{ANDROID_VULKAN_LIBRARY\}\)/)});
+test('fence and 256-element readback must still exist',()=>{assert.match(cpp,/vkWaitForFences/);assert.match(cpp,/vkMapMemory/);assert.match(cpp,/static constexpr uint32_t N=256/)});
