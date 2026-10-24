@@ -39,7 +39,6 @@ $buildArgs = @(
     '/p:Platform=x64',
     '/p:SignMode=Off',
     '/p:EnableInf2Cat=false',
-    '/p:DisableSpecificWarnings=4996',
     ("/p:SolutionDir=$srcRoot/"),
     ("/p:OutDir=$outArg"),
     ("/p:IntDir=$intArg")
