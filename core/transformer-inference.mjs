@@ -97,7 +97,6 @@ export class LeeWayTransformerSession{
     const rowsPerChunk=Math.max(1,Math.min(65535,Math.floor(chunkBudget/stride))),parts=[];
     for(let row=0;row<rows;row+=rowsPerChunk){const count=Math.min(rowsPerChunk,rows-row),data=await this.range(name,row,count);if(data.byteLength!==count*stride)throw Error('MODEL_RANGE_SIZE_MISMATCH');const buffer=this.ops.upload(data);parts.push({buffer,start:row,rows:count});this.io.packedWeightBytes+=data.byteLength;await this.device.queue.onSubmittedWorkDone();}
     this.weights.set(name,{...t,parts});
-    if(i%50===0||i===this.required.length-1)console.log('WEIGHTS '+(i+1)+'/'+this.required.length+' '+this.io.packedWeightBytes);
    }
    const maxHead=Math.max(...this.graph.map(g=>g.hd*this.heads)),maxKv=Math.max(...this.graph.map(g=>g.kvWidth)),maxFf=Math.max(...this.graph.map(g=>g.ff));
    const allocate=n=>this.ops.allocate(n*4);
@@ -192,22 +191,33 @@ export class LeeWayTransformerSession{
   await requireInferenceExecution(context,this.plan,'BEFORE_MODEL_EXECUTION');
   if(task.contextLimit!==this.context)throw Error('MODEL_CONTEXT_PLAN_MISMATCH');
   return (async()=>{
-   await this.load(context);const start=performance.now();const output=[];let token;
-   for(let i=0;i<task.inputIds.length;i++){if(context.signal?.aborted)throw Error('MODEL_CANCELLED');token=await this.token(task.inputIds[i],i,i===task.inputIds.length-1);if(i%8===0)console.log('PREFILL '+(i+1)+'/'+task.inputIds.length);}
-   const prefillMs=performance.now()-start;
-   const decodeStarted=performance.now();
+   const modelLoadState=this.loaded?'WARM_CACHED':'COLD_LOAD';
+   const loadStarted=performance.now();await this.load(context);const modelLoadMs=performance.now()-loadStarted;
+   const graphStarted=performance.now();const output=[];let token;
+   for(let i=0;i<task.inputIds.length;i++){if(context.signal?.aborted)throw Error('MODEL_CANCELLED');token=await this.token(task.inputIds[i],i,i===task.inputIds.length-1);}
+   const prefillMs=performance.now()-graphStarted;
    const stop=new Set(this.meta['tokenizer.ggml.eos_token_ids']||[this.meta['tokenizer.ggml.eos_token_id']]);
+   let decodeMs=0,decodeModelSteps=0,decodeVisibleTokens=0,decodeStopTokens=0;
    for(let j=0;j<max;j++){
-    if(context.signal?.aborted)throw Error('MODEL_CANCELLED');if(stop.has(token))break;output.push(token);console.log('TOKEN '+j+' '+token);
-    if(j+1<max)token=await this.token(token,task.inputIds.length+j,true);
+    if(context.signal?.aborted)throw Error('MODEL_CANCELLED');if(stop.has(token))break;output.push(token);
+    if(j+1<max){
+     const stepStarted=performance.now();token=await this.token(token,task.inputIds.length+j,true);
+     decodeMs+=performance.now()-stepStarted;decodeModelSteps++;
+     if(stop.has(token))decodeStopTokens++;else decodeVisibleTokens++;
+    }
    }
-   const decodeMs=performance.now()-decodeStarted,totalInferenceMs=performance.now()-start;
-   const modelGraphTimings={schema:'leeway.gpu.model-graph-timings.v1',
+   const graphAfterLoadMs=performance.now()-graphStarted;
+   const modelLoadAndGraphMs=modelLoadMs+graphAfterLoadMs;
+   const decodeTokensPerSecond=decodeVisibleTokens>0&&decodeMs>0?decodeVisibleTokens/(decodeMs/1000):null;
+   const modelGraphTimings={schema:'leeway.gpu.model-graph-timings.v2',
     scope:'MODEL_GRAPH_AFTER_LOAD_EXCLUDES_AUTHORIZATION_POST_VERITAS_AND_CONTINUUM_COMMIT',
-    modelLoadMs:this.loadMs,prefillMs,timeToFirstTokenMs:prefillMs,decodeMs,totalInferenceMs,
+    modelLoadState,modelLoadMs,prefillMs,modelGraphFirstTokenReadyMs:prefillMs,
+    clientTimeToFirstTokenMs:null,clientTimeToFirstTokenStatus:'NOT_MEASURED_NON_STREAMING_RESPONSE',
+    decodeMs,decodeModelSteps,decodeVisibleTokens,decodeStopTokens,decodeTokensPerSecond,
+    graphAfterLoadMs,modelLoadAndGraphMs,
     promptTokens:task.inputIds.length,visibleOutputTokens:output.length,
     tokenTimings:this.tokenRecords.map(({position,commands,elapsedMs})=>({position,commands,elapsedMs}))};
-   return {outputIds:output,stopToken:stop.has(token)?token:null,stopReason:stop.has(token)?'MODEL_END_TOKEN':'MAX_NEW_TOKENS',prefillTokens:task.inputIds.length,loadMs:this.loadMs,totalInferenceMs,modelGraphTimings,
+   return {outputIds:output,stopToken:stop.has(token)?token:null,stopReason:stop.has(token)?'MODEL_END_TOKEN':'MAX_NEW_TOKENS',prefillTokens:task.inputIds.length,loadMs:modelLoadMs,totalInferenceMs:graphAfterLoadMs,modelGraphTimings,
     execution:'LEEWAY_QUANTIZED_WGSL_GRAPH',architecture:this.arch,layers:this.layers,contextLimit:this.context,records:this.tokenRecords,resources:this.ops.describe(),io:this.io,
     externalModelEngine:false,cpuNeuralMath:false,formulaRouting:'REQUIRED_HOST_FORMULA_RECEIPT',ldWmdAllocation:'HOST_ADMITTED_LEASE_ONLY',canonicalAcceptance:'PENDING_HOST_POST_GATE',textOnly:true};
   })();

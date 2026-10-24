@@ -28,11 +28,14 @@ async function fixture({readiness = 'BOUND', qualificationChange, resultChange, 
       if (execution) return execution(input);
       const observed = {execution: 'LEEWAY_QUANTIZED_WGSL_GRAPH', externalModelEngine: false,
         cpuNeuralMath: false, outputIds: [modelPlan.metadata['tokenizer.ggml.tokens'].indexOf('4')],
-        modelGraphTimings:{schema:'leeway.gpu.model-graph-timings.v1',
+        modelGraphTimings:{schema:'leeway.gpu.model-graph-timings.v2',
           scope:'MODEL_GRAPH_AFTER_LOAD_EXCLUDES_AUTHORIZATION_POST_VERITAS_AND_CONTINUUM_COMMIT',
-          modelLoadMs:12,prefillMs:4,timeToFirstTokenMs:4,decodeMs:1,totalInferenceMs:5,
+          modelLoadState:'COLD_LOAD',modelLoadMs:12,prefillMs:4,modelGraphFirstTokenReadyMs:4,
+          clientTimeToFirstTokenMs:null,clientTimeToFirstTokenStatus:'NOT_MEASURED_NON_STREAMING_RESPONSE',
+          decodeMs:0,decodeModelSteps:0,decodeVisibleTokens:0,decodeStopTokens:0,decodeTokensPerSecond:null,
+          graphAfterLoadMs:5,modelLoadAndGraphMs:17,
           promptTokens:input.plan.inputTokens.length,visibleOutputTokens:1,
-          tokenTimings:[{position:input.plan.inputTokens.length-1,commands:8,elapsedMs:4}]}};
+          tokenTimings:Array.from({length:input.plan.inputTokens.length},(_,position)=>({position,commands:8,elapsedMs:4}))}};
       const requestHash = await inferenceHash(snapshotInferenceRequest({type: 'AI_INFERENCE',
         requestId: input.requestId, sessionId: input.sessionId, modelSha256: H, tokenizerSha256: J,
         implementationSha256: K, contextLimit: input.plan.contextLimit, maxNewTokens: input.plan.maxNewTokens,
@@ -85,9 +88,15 @@ test('runtime unavailable denies activation and starts no model', async () => {
 test('authenticated client selection reaches existing graph and carries final audit evidence', async () => {
   const f = await fixture(); await activate(f); const answer = await generate(f);
   assert.equal(answer.text, '4'); assert.equal(answer.backend, 'LEEWAY_GPU');
-  assert.equal(answer.modelGraphTimings.totalInferenceMs,5);
+  assert.equal(answer.modelGraphTimings.graphAfterLoadMs,5);
+  assert.equal(answer.modelGraphTimings.modelLoadState,'COLD_LOAD');
+  assert.equal(answer.modelGraphTimings.modelLoadAndGraphMs,17);
+  assert.equal(answer.modelGraphTimings.clientTimeToFirstTokenMs,null);
+  assert.equal(answer.modelGraphTimings.decodeTokensPerSecond,null);
   assert(answer.modelGraphTimings.promptTokens>0);
-  assert.equal(answer.modelGraphTimings.tokenTimings[0].position,answer.modelGraphTimings.promptTokens-1);
+  assert.equal(answer.modelGraphTimings.tokenTimings.length,answer.modelGraphTimings.promptTokens);
+  assert.equal(answer.modelGraphTimings.tokenTimings[0].position,0);
+  assert.equal(answer.modelGraphTimings.tokenTimings.at(-1).position,answer.modelGraphTimings.promptTokens-1);
   assert.equal(answer.canonicalReceiptIssued, true); assert.equal(f.calls(), 1);
   assert.deepEqual(f.principalCalls, [{clientId: 'registered-client'}]);
 });
@@ -115,9 +124,12 @@ test('missing ledger or altered source identity withholds the response', async (
 test('model graph timings must be present, bounded and covered by result evidence', async () => {
   for (const resultChange of [
     result => delete result.modelGraphTimings,
-    result => result.modelGraphTimings.totalInferenceMs = -1,
+    result => result.modelGraphTimings.graphAfterLoadMs = -1,
     result => result.modelGraphTimings.promptTokens++,
-    result => result.modelGraphTimings.tokenTimings[0].elapsedMs = Infinity]) {
+    result => result.modelGraphTimings.modelLoadState = 'UNKNOWN',
+    result => result.modelGraphTimings.tokenTimings[0].elapsedMs = Infinity,
+    result => result.modelGraphTimings.clientTimeToFirstTokenMs = 4,
+    result => result.modelGraphTimings.tokenTimings.pop()]) {
     const f = await fixture({resultChange}); await activate(f);
     await assert.rejects(generate(f), /PERFORMANCE_EVIDENCE_INCOMPLETE|RESULT_HASH_MISMATCH/);
   }

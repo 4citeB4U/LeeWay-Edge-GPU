@@ -17,13 +17,25 @@ import {canonicalGpuSigningBytes} from './signing-json.mjs';
 const identity = value => typeof value === 'string' && /^[A-Za-z0-9][A-Za-z0-9_.:/-]{0,159}$/.test(value);
 const fail = code => { throw Object.assign(new Error(code), {code}); };
 function validateModelGraphTimings(value,{promptTokens,visibleOutputTokens}){
-  const numeric=['modelLoadMs','prefillMs','timeToFirstTokenMs','decodeMs','totalInferenceMs'];
-  if(value?.schema!=='leeway.gpu.model-graph-timings.v1'||
+  const numeric=['modelLoadMs','prefillMs','modelGraphFirstTokenReadyMs','decodeMs','graphAfterLoadMs','modelLoadAndGraphMs'];
+  if(value?.schema!=='leeway.gpu.model-graph-timings.v2'||
     value.scope!=='MODEL_GRAPH_AFTER_LOAD_EXCLUDES_AUTHORIZATION_POST_VERITAS_AND_CONTINUUM_COMMIT'||
+    !['COLD_LOAD','WARM_CACHED'].includes(value.modelLoadState)||
     numeric.some(key=>!Number.isFinite(value[key])||value[key]<0||value[key]>600000)||
+    value.clientTimeToFirstTokenMs!==null||
+    value.clientTimeToFirstTokenStatus!=='NOT_MEASURED_NON_STREAMING_RESPONSE'||
+    value.modelGraphFirstTokenReadyMs!==value.prefillMs||
+    Math.abs(value.modelLoadAndGraphMs-(value.modelLoadMs+value.graphAfterLoadMs))>0.01||
     value.promptTokens!==promptTokens||value.visibleOutputTokens!==visibleOutputTokens||
-    !Array.isArray(value.tokenTimings)||value.tokenTimings.length>65||
-    value.tokenTimings.some(item=>!Number.isSafeInteger(item?.position)||item.position<0||
+    !Number.isSafeInteger(value.decodeModelSteps)||value.decodeModelSteps<0||value.decodeModelSteps>64||
+    !Number.isSafeInteger(value.decodeVisibleTokens)||value.decodeVisibleTokens<0||value.decodeVisibleTokens>64||
+    !Number.isSafeInteger(value.decodeStopTokens)||value.decodeStopTokens<0||value.decodeStopTokens>1||
+    value.decodeModelSteps!==value.decodeVisibleTokens+value.decodeStopTokens||
+    value.decodeVisibleTokens!==Math.max(0,visibleOutputTokens-1)||
+    (value.decodeVisibleTokens===0?value.decodeTokensPerSecond!==null:
+      !Number.isFinite(value.decodeTokensPerSecond)||value.decodeTokensPerSecond<=0||value.decodeTokensPerSecond>1000000)||
+    !Array.isArray(value.tokenTimings)||value.tokenTimings.length!==promptTokens+value.decodeModelSteps||
+    value.tokenTimings.some((item,index)=>!Number.isSafeInteger(item?.position)||item.position!==index||
       !Number.isSafeInteger(item?.commands)||item.commands<0||
       !Number.isFinite(item?.elapsedMs)||item.elapsedMs<0||item.elapsedMs>600000))
     fail('GPU_PROVIDER_PERFORMANCE_EVIDENCE_INCOMPLETE');
