@@ -2,25 +2,25 @@
 # REGION: LEEWAY.EDGE_GPU.WINDOWS.MCDM_37_REAL_TRANSLATION_UNITS
 # TAG: LEEWAY_WINDOWS_KERNEL_AND_D3D12_UMD_COMPLETE_SOURCE_COMPILATION_V2
 # WHO: Creator-authorized LeeWay engineering.
-# WHAT: Real upstream kernel + user-mode module compilation, no driver install.
+# WHAT: Real upstream kernel + user-mode source compilation plus an unsigned KMD link check.
 # WHEN: 2026-10-24. WHERE: GitHub hosted Windows build.
 # WHY: Independently reproduce 11/11 KMD and all 26 UMD source compilations.
 # HOW: MSVC, Windows SDK 26100 WDK KM headers, WPP tracing.
-# AUTHORITY: OBJECT_COMPILATION_ONLY, never OS recognition or production certification.
+# AUTHORITY: SOURCE_COMPILE_AND_UNSIGNED_KMD_LINK_ONLY; no OS recognition, signing, or production certification.
 # LICENSE: Existing LeeWay terms and original upstream MIT.
-name: LeeWay compute driver 37 module build
+name: LeeWay compute driver 37 module compile and KMD link check
 on:
   pull_request:
     paths:
       - 'native/windows/mcdm/**'
       - 'third_party/microsoft-graphics-driver-samples/**'
-      - '.github/workflows/leeway-mcdm-31-real-object-build.yml'
+      - '.github/workflows/leeway-mcdm-37-real-object-build.yml'
   push:
     branches: [main]
     paths:
       - 'native/windows/mcdm/**'
       - 'third_party/microsoft-graphics-driver-samples/**'
-      - '.github/workflows/leeway-mcdm-31-real-object-build.yml'
+      - '.github/workflows/leeway-mcdm-37-real-object-build.yml'
   workflow_dispatch:
 permissions:
   contents: read
@@ -48,6 +48,11 @@ jobs:
         run: |
           & ./native/windows/mcdm/compile-kernel-all-objects.ps1
           if ($LASTEXITCODE -ne 0) { throw 'LEEWAY_KMD_ALL_ELEVEN_REAL_OBJECTS_BUILD_FAILED' }
+      - name: Link and inspect the original unsigned KMD through its WDK project
+        shell: pwsh
+        run: |
+          & ./native/windows/mcdm/link-kernel-project.ps1
+          if ($LASTEXITCODE -ne 0) { throw 'LEEWAY_KMD_UNSIGNED_PROJECT_LINK_FAILED' }
       - name: Compile entire original D3D12 software compute UMD into 26 objects
         shell: pwsh
         run: |
@@ -60,4 +65,4 @@ jobs:
           $obj2 = @(Get-ChildItem (Join-Path $env:TEMP 'leeway-mcdm-umd26-objects') -Filter '*.obj')
           if ($obj1.Count -ne 11 -or $obj2.Count -ne 26) { throw 'LEEWAY_REAL_37_MODULE_OBJECT_COUNT_MISMATCH' }
           Write-Host 'LEEWAY_KERNEL_11_UMD_26_SOURCE_BUILD_PASS'
-          Write-Host 'LEEWAY_WINDOWS_GPU_REGISTRATION_NOT_TESTED; KMD_NOT_LINKED; UMD_NOT_LINKED; DRIVER_NOT_INSTALLED'
+          Write-Host 'LEEWAY_WINDOWS_GPU_REGISTRATION_NOT_TESTED; KMD_LINKED_UNSIGNED_BUILD_ONLY; UMD_NOT_LINKED; DRIVER_NOT_INSTALLED'
