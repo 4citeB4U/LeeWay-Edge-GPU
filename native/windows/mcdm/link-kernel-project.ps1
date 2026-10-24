@@ -28,8 +28,8 @@ $output = [IO.Path]::GetFullPath($OutputDirectory)
 $intermediate = Join-Path $output 'obj'
 New-Item -ItemType Directory -Path $output -Force | Out-Null
 New-Item -ItemType Directory -Path $intermediate -Force | Out-Null
-$outArg = $output.TrimEnd('\\') + '\\'
-$intArg = $intermediate.TrimEnd('\\') + '\\'
+$outArg = $output.TrimEnd('\') + '\'
+$intArg = $intermediate.TrimEnd('\') + '\'
 $buildArgs = @(
     $project,
     '/nologo',
@@ -66,7 +66,7 @@ if (-not $vcVersion) { throw 'LEEWAY_KMD_DUMPBIN_TOOLSET_MISSING' }
 $dumpbin = Join-Path $vcVersion.FullName 'bin/Hostx64/x64/dumpbin.exe'
 if (-not (Test-Path -LiteralPath $dumpbin)) { throw 'LEEWAY_KMD_DUMPBIN_MISSING' }
 $headers = (& $dumpbin /headers $image.FullName 2>&1 | Out-String)
-if ($LASTEXITCODE -ne 0 -or $headers -notmatch '(?i)subsystem\\s*\\(native\\)') {
+if ($LASTEXITCODE -ne 0 -or $headers -notmatch '(?i)subsystem\s*\(native\)') {
     throw 'LEEWAY_KMD_IMAGE_IS_NOT_A_NATIVE_KERNEL_IMAGE'
 }
 $imports = (& $dumpbin /imports $image.FullName 2>&1 | Out-String)
