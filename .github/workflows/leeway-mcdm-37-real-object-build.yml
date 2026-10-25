@@ -1,26 +1,28 @@
 # LEEWAY HEADER — DO NOT REMOVE
 # REGION: LEEWAY.EDGE_GPU.WINDOWS.MCDM_37_REAL_TRANSLATION_UNITS
-# TAG: LEEWAY_WINDOWS_KERNEL_AND_D3D12_UMD_COMPLETE_SOURCE_COMPILATION_V2
+# TAG: LEEWAY_WINDOWS_KMD_LINK_AND_UMD_SOURCE_BUILD_V3
 # WHO: Creator-authorized LeeWay engineering.
-# WHAT: Real upstream kernel + user-mode module compilation, no driver install.
+# WHAT: Compile original Windows adapter sources and link the authentic KMD.
 # WHEN: 2026-10-24. WHERE: GitHub hosted Windows build.
-# WHY: Independently reproduce 11/11 KMD and all 26 UMD source compilations.
-# HOW: MSVC, Windows SDK 26100 WDK KM headers, WPP tracing.
-# AUTHORITY: OBJECT_COMPILATION_ONLY, never OS recognition or production certification.
+# WHY: Independently reproduce 11 KMD objects, their unsigned link, and 26 UMD objects.
+# HOW: MSVC, Windows SDK 26100 WDK KM headers, WPP tracing, authentic WDK libraries.
+# AUTHORITY: BUILD_QUALIFICATION_ONLY. No portable inference routing, signing, install or OS mutation.
 # LICENSE: Existing LeeWay terms and original upstream MIT.
-name: LeeWay compute driver 37 module build
+name: LeeWay Windows KMD link and UMD source build
 on:
   pull_request:
     paths:
       - 'native/windows/mcdm/**'
       - 'third_party/microsoft-graphics-driver-samples/**'
       - '.github/workflows/leeway-mcdm-31-real-object-build.yml'
+      - '.github/workflows/leeway-mcdm-37-real-object-build.yml'
   push:
     branches: [main]
     paths:
       - 'native/windows/mcdm/**'
       - 'third_party/microsoft-graphics-driver-samples/**'
       - '.github/workflows/leeway-mcdm-31-real-object-build.yml'
+      - '.github/workflows/leeway-mcdm-37-real-object-build.yml'
   workflow_dispatch:
 permissions:
   contents: read
@@ -48,16 +50,44 @@ jobs:
         run: |
           & ./native/windows/mcdm/compile-kernel-all-objects.ps1
           if ($LASTEXITCODE -ne 0) { throw 'LEEWAY_KMD_ALL_ELEVEN_REAL_OBJECTS_BUILD_FAILED' }
-      - name: Compile entire original D3D12 software compute UMD into 26 objects
+      - name: Link authentic unsigned KMD and inspect PE imports
+        shell: pwsh
+        run: |
+          & ./native/windows/mcdm/link-kernel-driver.ps1
+          if ($LASTEXITCODE -ne 0) { throw 'LEEWAY_KMD_REAL_LINK_FAILED' }
+          $imageDirectory = Join-Path $env:TEMP 'leeway-mcdm-kernel-link-test'
+          $image = Join-Path $imageDirectory 'leeway-mcdm-unsigned-test.sys'
+          if (-not (Test-Path -LiteralPath $image -PathType Leaf)) { throw 'LEEWAY_KMD_LINK_OUTPUT_MISSING' }
+          if ((Get-Item -LiteralPath $image).Length -le 0) { throw 'LEEWAY_KMD_LINK_OUTPUT_EMPTY' }
+          $imageSha256 = (Get-FileHash -LiteralPath $image -Algorithm SHA256).Hash.ToLowerInvariant()
+          $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio/Installer/vswhere.exe'
+          $vs = (& $vswhere -latest -products '*' -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath | Select-Object -First 1)
+          if (-not $vs) { throw 'LEEWAY_KMD_DUMPBIN_MSVC_MISSING' }
+          $msvcRoot = Join-Path $vs 'VC/Tools/MSVC'
+          $toolset = Get-ChildItem -LiteralPath $msvcRoot -Directory | Sort-Object { [version]$_.Name } -Descending | Select-Object -First 1
+          if (-not $toolset) { throw 'LEEWAY_KMD_DUMPBIN_TOOLSET_MISSING' }
+          $dumpbin = Join-Path $toolset.FullName 'bin/Hostx64/x64/dumpbin.exe'
+          if (-not (Test-Path -LiteralPath $dumpbin -PathType Leaf)) { throw 'LEEWAY_KMD_DUMPBIN_MISSING' }
+          $dependencyOutput = @(& $dumpbin /DEPENDENTS $image)
+          if ($LASTEXITCODE -ne 0) { throw 'LEEWAY_KMD_PE_IMPORT_INSPECTION_FAILED' }
+          $dependencyText = $dependencyOutput -join [Environment]::NewLine
+          $importNames = @([regex]::Matches($dependencyText, '(?im)^\s*([A-Za-z0-9_.-]+\.(?:dll|sys|exe))\s*$') | ForEach-Object { $_.Groups[1].Value.ToLowerInvariant() } | Sort-Object -Unique)
+          if ($importNames.Count -eq 0 -or $importNames -notcontains 'ntoskrnl.exe') { throw 'LEEWAY_KMD_KERNEL_IMPORT_SET_UNVERIFIED' }
+          $userModeImports = @([regex]::Matches($dependencyText, '(?im)^\s*((?:KERNEL32|USER32|GDI32|ADVAPI32|SHELL32|NTDLL|MSVCRT|UCRTBASE|VCRUNTIME[^.]*|MSVCP[^.]*|API-MS-WIN-CRT[^.]*)\.dll)\s*$') | ForEach-Object { $_.Groups[1].Value })
+          if ($userModeImports.Count -gt 0) { throw ('LEEWAY_KMD_USERMODE_IMPORTS_FOUND: ' + ($userModeImports -join ',')) }
+          Write-Host ('LEEWAY_KMD_LINK_AND_IMPORT_PASS linked=true signed=false installed=false sha256=' + $imageSha256 + ' dependencies=' + ($importNames -join ','))
+      - name: Compile the optional Windows UMD source modules
         shell: pwsh
         run: |
           & ./native/windows/mcdm/compile-umd26-objects.ps1
           if ($LASTEXITCODE -ne 0) { throw 'LEEWAY_UMD_26_REAL_OBJECTS_BUILD_FAILED' }
-      - name: Assert compile-only output, never a signed or installed driver
+      - name: Assert build-only outputs; never register or install a driver
         shell: pwsh
         run: |
           $obj1 = @(Get-ChildItem (Join-Path $env:TEMP 'leeway-mcdm-all11-kmd-objects') -Filter '*.obj')
           $obj2 = @(Get-ChildItem (Join-Path $env:TEMP 'leeway-mcdm-umd26-objects') -Filter '*.obj')
-          if ($obj1.Count -ne 11 -or $obj2.Count -ne 26) { throw 'LEEWAY_REAL_37_MODULE_OBJECT_COUNT_MISMATCH' }
-          Write-Host 'LEEWAY_KERNEL_11_UMD_26_SOURCE_BUILD_PASS'
-          Write-Host 'LEEWAY_WINDOWS_GPU_REGISTRATION_NOT_TESTED; KMD_NOT_LINKED; UMD_NOT_LINKED; DRIVER_NOT_INSTALLED'
+          $image = Join-Path (Join-Path $env:TEMP 'leeway-mcdm-kernel-link-test') 'leeway-mcdm-unsigned-test.sys'
+          if ($obj1.Count -ne 11 -or $obj2.Count -ne 26 -or -not (Test-Path -LiteralPath $image -PathType Leaf)) {
+            throw 'LEEWAY_REAL_BUILD_OUTPUTS_UNVERIFIED'
+          }
+          Write-Host 'LEEWAY_KMD_11_OBJECTS_AND_UNSIGNED_LINK_PASS; OPTIONAL_UMD_26_OBJECTS_PASS; UMD_NOT_LINKED; DRIVER_NOT_INSTALLED; PORTABLE_INFERENCE_UNCHANGED'
