@@ -50,6 +50,11 @@ jobs:
         run: |
           & ./native/windows/mcdm/compile-kernel-all-objects.ps1
           if ($LASTEXITCODE -ne 0) { throw 'LEEWAY_KMD_ALL_ELEVEN_REAL_OBJECTS_BUILD_FAILED' }
+      - name: Link and inspect the original unsigned KMD through its WDK project
+        shell: pwsh
+        run: |
+          & ./native/windows/mcdm/link-kernel-project.ps1
+          if ($LASTEXITCODE -ne 0) { throw 'LEEWAY_KMD_UNSIGNED_PROJECT_LINK_FAILED' }
       - name: Link authentic unsigned KMD and inspect PE imports
         shell: pwsh
         run: |
