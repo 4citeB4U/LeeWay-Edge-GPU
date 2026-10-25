@@ -39,7 +39,7 @@ foreach($f in $units){
    if($LASTEXITCODE -ne 0){throw ('LEEWAY_KMD_REAL_WPP_GENERATION_FAILED: '+$f.Name)}
  }
  $obj=Join-Path $OutputDirectory ($f.BaseName+'.obj')
- $cmd='"'+$vcvars+'" >NUL && cl /nologo /c /TP /W3 /kernel /Zl /DWPP_TRACE_OPTIONS=43 /DENABLE_WPP_RECORDER=1 /FI"'+$compat+'" /D_AMD64_ /DAMD64 /D_WIN32_WINNT=0x0A00 /DNTDDI_VERSION=0x0A000000'+$inc+' /Fo"'+$obj+'" "'+$f.FullName+'"'
+ $cmd='"'+$vcvars+'" >NUL && cl /nologo /c /TP /W3 /kernel /Zl /DNTSTRSAFE_LIB /DWPP_TRACE_OPTIONS=43 /DENABLE_WPP_RECORDER=1 /FI"'+$compat+'" /D_AMD64_ /DAMD64 /D_WIN32_WINNT=0x0A00 /DNTDDI_VERSION=0x0A000000'+$inc+' /Fo"'+$obj+'" "'+$f.FullName+'"'
  & cmd.exe /d /s /c $cmd
  if($LASTEXITCODE -ne 0 -or !(Test-Path $obj)){throw ('LEEWAY_MCDM_KERNEL_OBJECT_FAILED: '+$f.Name)}
  $count++
