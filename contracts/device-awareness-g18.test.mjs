@@ -1,0 +1,15 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {admitDeviceAwareness} from './device-awareness-g18.mjs';
+const sample=()=>({deviceId:'pc-primary',platform:'windows',observedAt:'2026-10-16T20:00:00Z',source:'device-bridge',physicalGpus:[{name:'Intel Graphics',manufacturer:'Intel',source:'OS'}],leeway:{name:'LeeWay Edge GPU',manufacturer:'LeeWay Industries',mode:'UNAVAILABLE',osNativeGpu:false,executionVerified:false},diagnostics:{deviceId:'pc-primary',observationId:'obs-1'},digitalBrain:{deviceId:'pc-primary',observationId:'obs-1'}});
+const ref=()=>({receiptId:'receipt-1',source:'veritas',sha256:'a'.repeat(64),observationId:'obs-1'});
+test('same observation admitted without false GPU claim',()=>assert.equal(admitDeviceAwareness(sample()).diagnosticsBrainSynchronized,true));
+test('rejects fake native GPU',()=>{const s=sample();s.leeway.osNativeGpu=true;assert.throws(()=>admitDeviceAwareness(s),/NATIVE_GPU_EVIDENCE_REQUIRED/)});
+test('rejects divergent brain observation',()=>{const s=sample();s.digitalBrain.observationId='obs-2';assert.throws(()=>admitDeviceAwareness(s),/BRAIN_DIAGNOSTICS_DIVERGED/)});
+test('rejects unverified assist',()=>{const s=sample();s.leeway.mode='LEEWAY_ASSIST';assert.throws(()=>admitDeviceAwareness(s),/EXECUTION_EVIDENCE_REQUIRED/)});
+test('rejects unknown GPU manufacturer',()=>{const s=sample();s.physicalGpus[0].manufacturer='';assert.throws(()=>admitDeviceAwareness(s),/PHYSICAL_GPU_PROVENANCE_REQUIRED/)});
+test('rejects self-asserted execution without evidence',()=>{const s=sample();s.leeway.mode='LEEWAY_ASSIST';s.leeway.executionVerified=true;assert.throws(()=>admitDeviceAwareness(s),/EXECUTION_EVIDENCE_REQUIRED/)});
+test('rejects evidence reference without external verification',()=>{const s=sample();s.leeway.mode='LEEWAY_ASSIST';s.leeway.evidence={execution:ref()};assert.throws(()=>admitDeviceAwareness(s),/EXECUTION_EVIDENCE_REQUIRED/)});
+test('rejects mismatched observation evidence',()=>{const s=sample();s.leeway.mode='LEEWAY_ASSIST';s.leeway.evidence={execution:{...ref(),observationId:'obs-2'}};assert.throws(()=>admitDeviceAwareness(s,()=>true),/EXECUTION_EVIDENCE_REQUIRED/)});
+test('admits externally verified execution reference without native GPU claim',()=>{const s=sample();s.leeway.mode='LEEWAY_ASSIST';s.leeway.evidence={execution:ref()};const result=admitDeviceAwareness(s,(kind,e)=>kind==='execution'&&e.receiptId==='receipt-1');assert.equal(result.osNativeGpu,false);assert.equal(result.evidenceQualification,'EXTERNALLY_VERIFIED_BY_CALLER')});
+test('native GPU requires independently verified enumeration and readback',()=>{const s=sample();s.leeway.osNativeGpu=true;s.leeway.evidence={nativeEnumeration:ref(),commandReadback:ref()};assert.throws(()=>admitDeviceAwareness(s,(kind)=>kind==='nativeEnumeration'),/NATIVE_GPU_EVIDENCE_REQUIRED/)});

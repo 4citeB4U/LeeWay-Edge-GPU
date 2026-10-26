@@ -1,0 +1,10 @@
+Name: pymobiledevice3
+Version: 11.33.1
+Summary: Pure python3 implementation for working with iDevices (iPhone, etc...)
+Home-page: https://github.com/doronz88/pymobiledevice3
+Author: 
+Author-email: doronz88 <doron88@gmail.com>, matan <matan1008@gmail.com>
+License-Expression: GPL-3.0-or-later
+Location: C:\Users\Leona\AppData\Local\LeeWay\tools\pymobiledevice3\venv\Lib\site-packages
+Requires: asgiwebdav, asn1, av, backports.zstd, bpylist2, coloredlogs, cryptography, daemonize, defusedxml, developer_disk_image, fastapi, hyperframe, ifaddr, ipsw_parser, IPython, opack2, packaging, Pillow, pmd-net-addr, pmd-pytcp, prompt_toolkit, psutil, pycrashreport, pygments, pygnuutils, pyimg4, pyiosbackup, pykdebugparser, python-pcapng, pytun-pmd3, pyusb, pywin32, qh3, questionary, requests, srptools, tqdm, typer, typer-injector, typing_extensions, uvicorn, wsproto
+Required-by: 

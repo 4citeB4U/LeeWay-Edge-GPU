@@ -1,0 +1,8 @@
+import {execFileSync} from 'node:child_process';
+import fs from 'node:fs';
+const command=`$ErrorActionPreference='Stop'; $d=@(Get-PnpDevice -Class Display | Select-Object FriendlyName,Status,InstanceId); $drivers=@(Get-CimInstance Win32_SystemDriver | Where-Object {$_.Name -match 'LeeWay.*GPU|LeeWay.*Display'} | Select-Object Name,State,PathName); [pscustomobject]@{display=$d;drivers=$drivers}|ConvertTo-Json -Depth 6 -Compress`;
+const raw=execFileSync('powershell.exe',['-NoProfile','-NonInteractive','-Command',command],{encoding:'utf8',timeout:20000});
+const observed=JSON.parse(raw);const devices=Array.isArray(observed.display)?observed.display:[observed.display].filter(Boolean);
+const matches=devices.filter(x=>/leeway/i.test(x.FriendlyName??''));
+const result={schema:'leeway.gpu.native-enumeration.readiness.v1',platform:'windows',source:'Get-PnpDevice -Class Display; Win32_SystemDriver',observedAt:new Date().toISOString(),devices,leewayMatches:matches,driverServices:observed.drivers??[],nativeDisplayAdapterRecognized:matches.some(x=>x.Status==='OK'),acceptance:'NATIVE_DISPLAY_ADAPTER_MUST_BE_ENUMERATED_AND_FUNCTIONAL',note:'A software-device label alone does not establish a WDDM graphics driver, GPU hardware or WebGPU adapter.'};
+const dest=process.argv[2];if(dest)fs.writeFileSync(dest,JSON.stringify(result,null,2));console.log(JSON.stringify({nativeDisplayAdapterRecognized:result.nativeDisplayAdapterRecognized,deviceCount:devices.length,leewayMatchCount:matches.length,report:dest??null}));

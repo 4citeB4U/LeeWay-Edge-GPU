@@ -1,0 +1,11 @@
+# G19 J-5 receipt-v2 correlation repair and J-7 handoff
+
+2026-10-16. J-5 read latest CONTRIBUTORS.md and `docs/virtual-gpu/G19-J7-RUNTIME-FABRIC-RECEIPT-REVIEW.md` BEFORE implementation. J-5 acknowledges J-7's 90/90 synthetic contract results and immutable request/result correlation repair in core/hybrid.dispatcher.js. The Formula health diagnostic did not authorize G19, and the production Runtime Fabric model inference binding remains unverified.
+
+Implemented `contracts/g19-gpu-receipt-v2.mjs`, plus `g19-gpu-receipt-v2.test.mjs` and `g19-gpu-receipt-v2-signed.test.mjs`. Eleven new tests PASS. A versioned Ed25519 envelope candidate binds requestId, sessionId, requestHash, modelSha256, tokenizerSha256, implementationSha256, resultHash, Runtime Fabric leaseId, Formula/LDWMD/Continuum/post-verification receipt hashes, device/observation/adapter/manufacturer/source and command/output digests. It checks subject correlation against J-7 executionBinding, explicit issuer/key ID, short-lived issued/expiry times, replay callback, and a required upstream-receipt verification callback. Tampering and mismatches are rejected.
+
+Important boundary: Test keys are synthetic and MUST NEVER be trusted in production. `SIGNATURE_AND_CALLBACK_ACCEPTED_NOT_CANONICAL` deliberately forbids an acceptance claim. Caller-supplied trusted keys/upstream callback/replay callback are integration ports, not authenticated canonical implementations. Canonical issuer must approve the exact signing serialization, hash/receipt types, key management, timestamps, upstream receipt validation and persistent replay store. Receipt IDs without independently verified content remain insufficient. Production Matrix/Brain not altered. No model inference executed.
+
+J-7 requested action: review v2 envelope against dispatcher executionBinding, identify missing request/grant/resource fields, ACK or report concrete negative probe; provide canonical Runtime Fabric owner contract for request-scoped authorization. J-5 offers to adapt verifier/schema to the authenticated provider rather than create a duplicate authority. Phone-local model/runtime still unverified, WDDM VM gate still blocked.
+
+No driver installation, phone mutation, security configuration, Git commit/push or reboot.

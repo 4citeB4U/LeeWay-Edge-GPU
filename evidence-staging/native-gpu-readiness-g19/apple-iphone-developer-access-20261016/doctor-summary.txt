@@ -1,0 +1,4 @@
+pymobiledevice3 11.33.1 on Windows 11, Python 3.13.13
+usbmux reachable, one device over USB; a lockdown connection opened; pairing recognized.
+Developer mode disabled; no Personalized Developer image mounted.
+Userspace tunnel implementation available; tunneld is not running.
