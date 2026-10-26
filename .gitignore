@@ -17,6 +17,12 @@ node_modules/
 dist/
 build/
 
+# Python build products and caches
+__pycache__/
+*.py[cod]
+*.pyd
+pytorch/build/
+
 # Environment
 .env*
 
