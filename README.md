@@ -119,6 +119,6 @@ LDWMD means **LeeWay Device Working-Memory Database**. Its source owner remains 
 
 ## Publication and governance
 
-Development publication is through a feature branch and review PR. `main` has a pre-existing Fly.io deployment workflow; it is not advanced automatically. No driver installation, security-setting changes, paid resource acquisition, or production runtime restart is part of the local build.
+Deployment boundary: the former Fly configuration was retired because it deployed only the static site on shared CPU resources and did not provide LeeWay GPU inference. See [the hosting decision](docs/deployment/LEEWAY-GPU-HOSTING-DECISION-2026-11-05.md) for the active Vercel/control-plane role and the remaining qualified-GPU hosting gate. Native driver installation, security-setting changes, paid resource acquisition, and production runtime restarts remain separately authorized operations.
 
 [GPU build mission](https://github.com/4citeB4U/LeeWay-Edge-GPU/issues/1) · [Contributor hub](https://github.com/4citeB4U/LeeWay-Agent-Skills/issues/22) · [C3 authority](https://github.com/4citeB4U/Leeway-Runtime-Fabric/issues/21)

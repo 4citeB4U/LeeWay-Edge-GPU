@@ -1,88 +1,65 @@
 # Internal Admin Guide — LeeWay Edge RTC
 
-This guide is for system owners/administrators. It explains how to use, maintain, monitor, and control the system, including connection keys, backend access, and verification steps for deployments (e.g., Fly.io or your cloud provider).
+This guide covers service operations without assuming a particular cloud vendor. Use only the deployment provider and service bindings authorized for the target LeeWay environment.
 
 ---
 
-## 1. How the System Connects
+## 1. How the system connects
 
-- **Frontend (Web Demo/App):** Connects to the backend SFU via WebSocket (wss://your-sfu-host/ws).
-- **Backend (SFU):** Runs on your server or cloud (e.g., Fly.io, VPS).
-- **Agent Lee Voxel OS:** Connects to the SFU using the environment variable `VITE_VOICE_WS_URL`.
-- **JWT Tokens:** Used for authentication between clients and the SFU. In development, you can get a token from `/dev/token`.
+- **Frontend (web demo/app):** connects to the configured SFU over WebSocket (for example, `wss://your-sfu-host/ws`).
+- **Backend (SFU):** runs as an authorized managed service or approved server process.
+- **Agent Lee Voxel OS:** receives its WebSocket endpoint through `VITE_VOICE_WS_URL`.
+- **JWT tokens:** authenticate clients. Development-only token routes must never be exposed as production authority.
 
-### Example Connection Keys/Env Vars
-- `VITE_VOICE_WS_URL=wss://your-sfu-host/ws` (set in Agent Lee Voxel OS)
-- `JWT_SECRET=your-very-secret-key` (set in SFU backend .env)
-- `ANNOUNCED_IP=your.public.ip.address` (for ICE in cloud/NAT)
+Example configuration names:
+- `VITE_VOICE_WS_URL`: authorized SFU WebSocket endpoint.
+- `JWT_SECRET`: service-managed secret; never commit or print its value.
+- `ANNOUNCED_IP`: only where the selected SFU/network adapter requires a public address for ICE/NAT.
 
----
+## 2. Monitor and control
 
-## 2. How to Monitor & Control the System
+Use the service's documented, authenticated endpoints and the selected provider's deployment dashboard.
 
-### Monitoring
-- **Prometheus Metrics:** Visit `http://your-sfu-host:3000/metrics` (add to Grafana for dashboards)
-- **Health Check:** `http://your-sfu-host:3000/health` (returns status)
-- **Active Connections:** `http://your-sfu-host:3000/connections`
-- **Active Rooms:** `http://your-sfu-host:3000/rooms`
-- **Agent Status:** `http://your-sfu-host:3000/agents` and `/agents/runtime/status`
-- **Logs:** Check `services/sfu/logs/` on your server for detailed logs
+- Metrics: `/metrics`, when enabled.
+- Health: `/health`, when implemented by this service.
+- Connections and rooms: `/connections` and `/rooms`, when implemented and access-controlled.
+- Agent status: `/agents` and `/agents/runtime/status`, when implemented.
+- Logs: read from the service's approved log interface; do not assume host filesystem access.
 
-### Controlling
-- **Restarting Services:** Use Docker Compose or your process manager (systemd, PM2) to restart the SFU or web client.
-- **Scaling:** For high load, deploy multiple SFU instances and use a load balancer (see advanced docs).
-- **Agent Control:** Use `/agents/:codename/suspend` and `/agents/:codename/resume` (POST) for agent lifecycle (dev mode only).
+For restarts, scaling, and deployments, use the authorized provider control plane or the approved process manager. Confirm the target environment and current deployment before making changes.
 
----
+## 3. Verify a deployment
 
-## 3. How to Verify Deployment (e.g., Fly.io)
+1. Confirm the service identity, deployment revision, and environment in the provider control plane.
+2. Request the service's documented HTTPS health endpoint and check the returned service identity.
+3. Inspect metrics and logs through approved interfaces.
+4. Verify the web client uses the expected WebSocket origin.
+5. Perform an authorized connection test and record the exact observed result.
 
-1. **Check Service Health:**
-   - Open your deployed SFU URL (e.g., `https://your-sfu-app.fly.dev/health`).
-   - Should return `{ "status": "ok", ... }`.
-2. **Check Metrics:**
-   - Visit `/metrics` endpoint for Prometheus data.
-3. **Check Connections:**
-   - Visit `/connections` and `/rooms` to see live users/rooms.
-4. **Check Logs:**
-   - Use your cloud provider’s dashboard or SSH to the server and check `logs/`.
-5. **Check Web Demo:**
-   - Open the web demo URL and verify you can connect and talk to Agent Lee.
+A health response proves only that endpoint's reported process state. It does not by itself prove authenticated end-to-end voice, device access, GPU execution, or production authorization.
 
----
+## 4. Keys and secrets
 
-## 4. Keys & Secrets
-- **Never share your JWT_SECRET or admin credentials publicly.**
-- Store secrets in your cloud provider’s environment variable manager (Fly.io, etc.).
-- Rotate keys if you suspect compromise.
-
----
+- Never share `JWT_SECRET`, signing keys, or admin credentials.
+- Store secrets in the selected provider's secret manager or the service's authorized secret authority.
+- Rotate a key only through its owner-approved rotation process.
 
 ## 5. Troubleshooting
-- If the web demo can’t connect, check:
-  - The SFU is running and reachable (health endpoint)
-  - The WebSocket URL is correct in your client/app
-  - No firewall is blocking ports 3000, 3478, 5349, or 40000-49999/UDP
-- If metrics or logs are missing, check your server’s disk space and permissions.
 
----
+If the web demo cannot connect, verify:
+- The intended SFU deployment is running and reachable.
+- The client WebSocket URL matches the approved service origin.
+- The current network adapter permits the required WebSocket and media traffic.
+- The provider logs show whether the connection reached the service.
 
-## 6. Useful Commands
+If metrics or logs are missing, check the service's configured telemetry and retention policy. Do not infer missing data from a local machine or a different environment.
 
-- **Restart all services (Docker Compose):**
-  ```bash
-  docker compose restart
-  ```
-- **View logs (Docker):**
-  ```bash
-  docker compose logs -f
-  ```
-- **SSH to server (Fly.io):**
-  ```bash
-  fly ssh console -a your-app-name
-  ```
-- **Set env vars (Fly.io):** Use their dashboard or CLI to set secrets.
+## 6. Local development commands
 
----
+For a local Docker Compose development stack:
+```bash
+docker compose restart
+docker compose logs -f
+```
 
-For more details, see the full docs or contact your technical support.
+These commands apply only to a local Compose environment. They do not deploy or restart a managed production service.
