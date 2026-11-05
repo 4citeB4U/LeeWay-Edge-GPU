@@ -1,0 +1,88 @@
+{
+  "schema": "leeway.gpu.contract-review.v1",
+  "state": "UNRATIFIED_REVIEW_ONLY",
+  "owners": [
+    "K1 / Device Bridge issuer",
+    "C3 / Runtime Fabric verifier and dispatch gate",
+    "Independent Veritas evidence authority",
+    "Continuum owner retention and canonical Learning Ledger"
+  ],
+  "legacy": {
+    "bridgeSixFieldOrder": [
+      "applicationId",
+      "requestId",
+      "nonce",
+      "grantId",
+      "issuerId",
+      "expiresAt"
+    ],
+    "bridgeSignatureEncoding": "Ed25519 / Base64 over JSON.stringify(array in exact listed order)",
+    "runtimeImportedVerifier": "leeway-device-grant-verifier.mjs (matching six fields)",
+    "alternateRuntimeEightFieldOrder": [
+      "applicationId",
+      "requestId",
+      "nonce",
+      "grantId",
+      "deviceId",
+      "issuedAt",
+      "expiresAt",
+      "issuer"
+    ],
+    "alternateVerifierCompatible": false,
+    "legacyExternalClientEnrollment": false
+  },
+  "reviewRequirements": {
+    "requiredSignedClaims": [
+      "schemaVersion",
+      "domain",
+      "issuerId",
+      "keyId",
+      "audience",
+      "applicationId",
+      "clientEnrollmentId",
+      "deviceId",
+      "capability",
+      "requestId",
+      "workloadHash",
+      "grantId",
+      "nonce",
+      "issuedAtMs",
+      "expiresAtMs",
+      "ownerApprovalId",
+      "maxMemoryBytes"
+    ],
+    "requiredAuthorities": [
+      "trustedIssuerAndKeyCustody",
+      "ownerApprovalAndClientEnrollment",
+      "durableReplayAdmission",
+      "approvedPreDispatchFormulaPolicy",
+      "physicalLDWMDLease",
+      "ownerAuthorizedContinuumRetention",
+      "independentCanonicalVeritas",
+      "healthyReceiptLedger",
+      "canonicalLearningLedgerReadback"
+    ],
+    "validationRules": [
+      "versioned domain separated signature and strict serialization ratified by K1/C3",
+      "issuedAtMs <= now < expiresAtMs with independent max grant lifetime bound",
+      "deviceId capability requestId workloadHash and audience must match the exact dispatch",
+      "third-party enrollment requires explicit owner approval, not a fake leeway- prefix",
+      "user ON is only a preference; no dispatch until all authorities are independently verified",
+      "unknown fields or versions must not silently upgrade authorization"
+    ],
+    "providerEntryPoints": [
+      "application router",
+      "provider router",
+      "native host dispatch",
+      "SDK or IPC",
+      "Vulkan opt-in layer or qualified driver"
+    ],
+    "platforms": [
+      "Windows D3D12",
+      "Android Vulkan",
+      "Linux Vulkan",
+      "Apple Metal"
+    ]
+  },
+  "hardBoundary": "THIS FILE IS NOT AN ISSUER, VERIFIER, TRUST ROSTER, PRODUCTION SCHEMA OR OWNER APPROVAL"
+}
