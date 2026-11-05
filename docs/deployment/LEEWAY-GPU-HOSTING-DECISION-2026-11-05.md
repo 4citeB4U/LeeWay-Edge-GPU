@@ -1,6 +1,6 @@
 # LeeWay GPU hosting decision — 2026-11-05
 
-**Authority:** Creator direction in the active engineering session. **Scope:** retire unused Fly.io deployment wiring and select the fastest deployment path supported by the connected LeeWay estate. **Status:** platform inventory and source changes verified; standalone hosted GPU inference remains unqualified.
+**Checkpoint:** 2026-11-05 15:38 America/Chicago (UTC−06:00). **Authority:** Creator direction in the active engineering session. **Scope:** retire unused Fly.io deployment wiring and select the fastest deployment path supported by the connected LeeWay estate. **Status:** platform inventory and source changes verified; GitHub Pages workflow run 42114285355 succeeded; standalone hosted GPU inference remains unqualified.
 
 ## Decision
 
@@ -23,7 +23,7 @@
 
 A deployment host is eligible for the LeeWay GPU runtime only when it proves real LeeWay-owned accelerator execution and can bind the existing Runtime Fabric authorization, Formula decision, LDWMD memory admission, Model Hub model identity/residency, Continuum persistence/readback, Veritas result decision, and canonical receipt/learning chain. A static website, CPU container, catalog record, READY deployment, or provider capability statement cannot satisfy these gates.
 
-The connected hosting inventory did not identify an already-provisioned qualified accelerator runtime. Therefore this change removes the incorrect Fly path and selects Vercel for existing control/catalog workloads; it does not claim or deploy a GPU inference service. No new provider, paid resource, secret, database, model, or device connection was provisioned.
+The connected hosting inventory did not identify an already-provisioned qualified accelerator runtime. Therefore this change removes the incorrect Fly path and selects Vercel for existing control/catalog workloads; it does not claim or deploy a GPU inference service. No GPU runtime, provider, database, paid resource, secret, model, or device connection was provisioned. The existing GitHub Pages workflow built and deployed the source site successfully (run 42114285355); this does not establish GPU service execution.
 
 ## Source references
 
