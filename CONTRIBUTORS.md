@@ -532,7 +532,7 @@ TEST REGRESSION: node --test machine-consciousness/tests/request-provider-bindin
 HARD RULE: Full Machine Consciousness target Agent Lee + M01-M15 + Guardian Core + Runtime Fabric + Formula + Computational Fabric + LDWMD + Continuum + Veritas + Receipt Ledger + Learning Ledger + existing voice/vision/brain/device interfaces. GPU one provider only. Reuse already-built; do not create a second brain, independent ledger, new Formula or bypass approvals.
 
 
-## 2026-11-05 — Creator deployment correction: retire Fly-only path
+## 2026-11-05 15:38 America/Chicago (-06:00) — Creator deployment correction: retire Fly-only path
 
 Creator clarified that Fly.io is not an approved or used LeeWay deployment target and directed us to use the fastest existing LeeWay-compatible deployment capabilities. Fresh main was inspected at `d7347eddeb1db3423f322fdc599c82e5f26eae5f`; the local checkout was 79 commits behind and was not used for the publication.
 
@@ -540,6 +540,6 @@ Creator clarified that Fly.io is not an approved or used LeeWay deployment targe
 
 **Platform inventory:** Vercel already has the LeeWay Runtime Fabric, Model Hub, and Device Bridge projects, so it is the fastest existing host for the web/control/catalog layer. Current project inventory reports latest deployment objects READY, but Runtime Fabric and Model Hub project objects report `live:false`; Model Hub also has SSO protection. Treat each exact route/alias as needing its own live verification. Railway's only connected production project contains a sleeping MySQL service and a 500 MB volume, with no GPU or Continuum service; official Railway documentation says GPU instances are unavailable. The connected Cloudflare account has zero deployed Worker scripts. These findings do not establish hosted GPU inference or a Continuum production service.
 
-**Accepted boundary:** Vercel may carry existing LeeWay UI, static catalog, and bounded control/API routes. LeeWay GPU remains the only inference identity; Continuum remains the only durable data authority. Do not route inference through the owner PC, external model APIs, Railway MySQL, Cloudflare Workers AI, or an alternate database/storage service. No new provider, paid resource, secret, model, deployment, or device operation was created.
+**Accepted boundary:** Vercel may carry existing LeeWay UI, static catalog, and bounded control/API routes. LeeWay GPU remains the only inference identity; Continuum remains the only durable data authority. Do not route inference through the owner PC, external model APIs, Railway MySQL, Cloudflare Workers AI, or an alternate database/storage service. No GPU runtime/provider/database, paid resource, secret, model, or device operation was provisioned. The existing GitHub Pages workflow run 42114285355 completed successfully; that verifies source-site publication only, not a GPU runtime or inference.
 
 **Acceptance / next gate:** active Fly config is removed from main; the exact-source readback must confirm deletions and docs. Standalone hosted GPU remains NOT QUALIFIED until a real LeeWay-owned accelerator runtime is found and independently bound to Runtime Fabric, Formula, LDWMD, Model Hub, Continuum, Veritas, and canonical receipts. This commit does not claim an inference deployment. Rollback is a scoped revert of the cleanup commit only after evidence and authorization.
