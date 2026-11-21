@@ -1,0 +1,52 @@
+# LEEWAY HEADER — DO NOT REMOVE
+# REGION: LEEWAY.EDGE_GPU.OPERATING_WORLD.CI
+# TAG: LEEWAY.GPU.ONE_WORLD.THIN_CLIENT.SOURCE_CI_V2
+# 5WH: WHAT=Source-level boundaries for one persistent GPU world and thin device access
+# WHY=Preserve scope and no duplicate agent/Runtime while avoiding invented hardware acceptance
+# WHO=Creator/LeeWay GPU source owners
+# WHERE=.github/workflows/gpu-operating-world-v2.yml
+# WHEN=2026-11-21
+# HOW=Run Node 22 source tests, collect exact log/hash and FAIL/PASS as CI evidence only
+# LICENSE=MIT; AUTHORITY=NOT_PRODUCTION_QUALIFICATION
+name: GPU Operating World V2 Source Contract
+on:
+  pull_request:
+    paths:
+      - 'docs/architecture/LEEWAY-GPU-OPERATING-WORLD-V2.md'
+      - 'contracts/leeway-gpu-operating-world.v2.json'
+      - 'tests/virtual-gpu/gpu-operating-world-boundary.test.mjs'
+      - '.github/workflows/gpu-operating-world-v2.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Source syntax
+        run: |
+          node --check tests/virtual-gpu/gpu-operating-world-boundary.test.mjs
+          node --input-type=module -e "import fs from 'node:fs'; const c=JSON.parse(fs.readFileSync('contracts/leeway-gpu-operating-world.v2.json','utf8')); if(c.schema!=='leeway.gpu.operating-world.v2')process.exit(1)"
+      - name: Source contract tests and original output
+        run: |
+          set -uo pipefail
+          mkdir -p .source-evidence
+          node --test --test-reporter=tap tests/virtual-gpu/gpu-operating-world-boundary.test.mjs > .source-evidence/results.tap 2>&1
+          result=$?
+          sha256sum .source-evidence/results.tap > .source-evidence/results.sha256
+          printf '{"schema":"leeway.gpu.operating-world.source-evidence.v2","commit":"%s","testExitCode":%d,"physicalGpuExecuted":false,"hostActivated":false,"productionQualified":false}\n' "${GITHUB_SHA}" "${result}" > .source-evidence/source-evidence.json
+          cat .source-evidence/results.tap
+          exit "${result}"
+      - name: Retain PASS or FAIL results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gpu-operating-world-source-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .source-evidence/
+          include-hidden-files: true
+          retention-days: 90
