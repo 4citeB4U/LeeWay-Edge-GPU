@@ -104,7 +104,7 @@ test('user graphics GPU is never LeeWay compute, accelerator fallback or model r
  assert.equal(c.softwareGpuExecutionSubstrate,'EXECUTION_HOST_CPU_AND_RAM');
  assert.equal(x.internalImageVoiceVisionInferenceMustUseSoftwarePipeline,true);
  assert.equal(x.missingSoftwareModelOrCodecOutcome,'NOT_AVAILABLE_NO_HOST_GPU_FALLBACK');
- assert.match(text,/physical graphics GPU is not a LeeWay compute provider/);
+ assert.match(text,/not a LeeWay compute resource/);
 });
 test('21 logical GPU components are a Creator-specified inventory target, not a fabricated verified count',()=>{
  assert.equal(c.creatorSpecifiedLogicalGpuComponents,21);
