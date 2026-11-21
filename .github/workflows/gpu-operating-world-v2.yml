@@ -34,6 +34,7 @@ jobs:
           node --input-type=module -e "import fs from 'node:fs'; const c=JSON.parse(fs.readFileSync('contracts/leeway-gpu-operating-world.v2.json','utf8')); if(c.schema!=='leeway.gpu.operating-world.v2')process.exit(1)"
       - name: Source contract tests and original output
         run: |
+          set +e
           set -uo pipefail
           mkdir -p .source-evidence
           node --test --test-reporter=tap tests/virtual-gpu/gpu-operating-world-boundary.test.mjs > .source-evidence/results.tap 2>&1
