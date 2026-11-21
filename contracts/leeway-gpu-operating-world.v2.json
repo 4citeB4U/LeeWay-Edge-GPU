@@ -17,7 +17,7 @@
   "schema": "leeway.gpu.operating-world.v2",
   "sourceStatus": "SOURCE_REVIEW_ONLY",
   "canonicalGpuServiceId": "leeway.gpu.service",
-  "meaning": "PERSISTENT_COMPOSED_LEEWAY_SOFTWARE_DEFINED_OPERATING_WORLD",
+  "meaning": "FORMULA_DEVELOPED_LEEWAY_SOFTWARE_GPU_OPERATING_WORLD",
   "hostedOperatingCoreIndependentOfUserDevices": true,
   "allTasksRouteThroughSameComposedWorld": true,
   "physicalGpuSiliconRequiredForEveryTask": false,
@@ -82,11 +82,22 @@
     "nativePhysicalActions": "DEVICE_BRIDGE_PERMISSIONED_ADAPTER"
   },
   "computer": {
-    "eligibleGpuAcceleratedWorkRequiresPhysicalBackendEvidence": true,
-    "nonGpuWorkRunsInSameLogicalWorld": true,
+    "leewayCoreComputeMethod": "FORMULA_GOVERNED_SOFTWARE_GPU_CPU_EXECUTED",
+    "hostCpuAndRamRequiredForSoftwareMath": true,
+    "independentHostedCpuMayReplaceEndUserDeviceCpu": true,
+    "physicalGraphicsGpuAsLeeWayProviderAllowed": false,
+    "physicalGraphicsGpuAsFallbackAllowed": false,
+    "physicalGraphicsGpuAsOptionalAccelerationAllowed": false,
+    "physicalGraphicsGpuEnumerationForLeewayPlacementAllowed": false,
+    "nativeGpuDispatchInCanonicalLeewayProductAllowed": false,
+    "internalImageVoiceVisionInferenceMustUseSoftwarePipeline": true,
+    "missingSoftwareModelOrCodecOutcome": "NOT_AVAILABLE_NO_HOST_GPU_FALLBACK",
+    "verifiedSourceInventoryRequiredFor21GpuClaim": true,
+    "contentGenerationClaimsNeedExecutionEvidence": true,
     "cpuRamNetworkStorageRemainPhysicalExecutionResources": true,
     "noIndependentPoweredComputeOutcome": "UNAVAILABLE_OR_CHECKPOINTED_RECOVERY",
-    "neverClaimGpuSiliconWhenCpuUsed": true
+    "historicalPhysicalGpuBenchmarksRetainedButNotProductAuthority": true,
+    "graphicalDisplayMayUseOsGraphicsWithoutBecomingLeewayCompute": true
   },
   "acceptanceGates": [
     "W1",
@@ -104,6 +115,15 @@
     "NO_FULL_DOWNLOAD_ON_REAL_HOSTS",
     "DEVICE_LOSS_REMOTE_COMPLETION",
     "INDEPENDENT_GPU_VERITAS",
-    "PRODUCTION_RECEIPT"
-  ]
+    "PRODUCTION_RECEIPT",
+    "21_SOFTWARE_GPU_COMPONENTS_SOURCE_ENUMERATION",
+    "CANONICAL_HOST_GPU_NONUSE_ENFORCEMENT",
+    "CPU_SOFTWARE_IMAGE_GENERATION_END_TO_END"
+  ],
+  "creatorSpecifiedLogicalGpuComponents": 21,
+  "logicalGpuComponentInventoryStatus": "CREATOR_SPECIFIED_COUNT_SOURCE_INVENTORY_PENDING",
+  "softwareGpuExecutionSubstrate": "EXECUTION_HOST_CPU_AND_RAM",
+  "externalUserDevicePhysicalGraphicsGpuUsedByLeeway": false,
+  "externalUserDevicePhysicalGraphicsGpuRequiredForLeeway": false,
+  "deviceGraphicsGpuOwnedBy": "DEVICE_OS_AND_USER_NOT_LEEWAY"
 }
