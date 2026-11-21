@@ -26,7 +26,7 @@ test('original GPU service identity retained; no alternative controller or produ
  assert.ok(c.notProvenByThisContract.includes('LIVE_HOSTED_WORLD'));
 });
 test('GPU is one persistent software-defined world, not a physical accelerator definition',()=>{
- assert.equal(c.meaning,'PERSISTENT_COMPOSED_LEEWAY_SOFTWARE_DEFINED_OPERATING_WORLD');
+ assert.equal(c.meaning,'FORMULA_DEVELOPED_LEEWAY_SOFTWARE_GPU_OPERATING_WORLD');
  assert.equal(c.hostedOperatingCoreIndependentOfUserDevices,true);
  assert.equal(c.allTasksRouteThroughSameComposedWorld,true);
  assert.equal(c.physicalGpuSiliconRequiredForEveryTask,false);
@@ -74,10 +74,10 @@ test('Tablet produces remote sandbox previews and local device export is explici
 });
 test('physical resource truth remains intact inside the operating world',()=>{
  const x=c.computer;
- assert.equal(x.eligibleGpuAcceleratedWorkRequiresPhysicalBackendEvidence,true);
- assert.equal(x.nonGpuWorkRunsInSameLogicalWorld,true);
+ assert.equal(x.physicalGraphicsGpuAsLeeWayProviderAllowed,false);
+ assert.equal(x.hostCpuAndRamRequiredForSoftwareMath,true);
  assert.equal(x.cpuRamNetworkStorageRemainPhysicalExecutionResources,true);
- assert.equal(x.neverClaimGpuSiliconWhenCpuUsed,true);
+ assert.equal(x.nativeGpuDispatchInCanonicalLeewayProductAllowed,false);
  assert.equal(x.noIndependentPoweredComputeOutcome,'UNAVAILABLE_OR_CHECKPOINTED_RECOVERY');
 });
 test('all eight physical operating-world acceptance gates remain required but not asserted',()=>{
@@ -86,4 +86,36 @@ test('all eight physical operating-world acceptance gates remain required but no
  assert.ok(c.notProvenByThisContract.includes('ONE_WORKER_CROSS_SITE_HANDOFF'));
  assert.ok(c.notProvenByThisContract.includes('DEVICE_LOSS_REMOTE_COMPLETION'));
  assert.ok(c.notProvenByThisContract.includes('PRODUCTION_RECEIPT'));
+});
+
+test('user graphics GPU is never LeeWay compute, accelerator fallback or model route',()=>{
+ assert.equal(c.externalUserDevicePhysicalGraphicsGpuUsedByLeeway,false);
+ assert.equal(c.externalUserDevicePhysicalGraphicsGpuRequiredForLeeway,false);
+ assert.equal(c.deviceGraphicsGpuOwnedBy,'DEVICE_OS_AND_USER_NOT_LEEWAY');
+ const x=c.computer;
+ for(const key of [
+   'physicalGraphicsGpuAsLeeWayProviderAllowed',
+   'physicalGraphicsGpuAsFallbackAllowed',
+   'physicalGraphicsGpuAsOptionalAccelerationAllowed',
+   'physicalGraphicsGpuEnumerationForLeewayPlacementAllowed',
+   'nativeGpuDispatchInCanonicalLeewayProductAllowed'
+ ])assert.equal(x[key],false,key);
+ assert.equal(x.softwareGpuExecutionSubstrate,undefined);
+ assert.equal(c.softwareGpuExecutionSubstrate,'EXECUTION_HOST_CPU_AND_RAM');
+ assert.equal(x.internalImageVoiceVisionInferenceMustUseSoftwarePipeline,true);
+ assert.equal(x.missingSoftwareModelOrCodecOutcome,'NOT_AVAILABLE_NO_HOST_GPU_FALLBACK');
+ assert.match(text,/physical graphics GPU is not a LeeWay compute provider/);
+});
+test('21 logical GPU components are a Creator-specified inventory target, not a fabricated verified count',()=>{
+ assert.equal(c.creatorSpecifiedLogicalGpuComponents,21);
+ assert.equal(c.logicalGpuComponentInventoryStatus,'CREATOR_SPECIFIED_COUNT_SOURCE_INVENTORY_PENDING');
+ assert.equal(c.computer.verifiedSourceInventoryRequiredFor21GpuClaim,true);
+ assert.ok(c.notProvenByThisContract.includes('21_SOFTWARE_GPU_COMPONENTS_SOURCE_ENUMERATION'));
+});
+test('CPU/RAM executes software math even when user device has no graphics card',()=>{
+ assert.equal(c.computer.leewayCoreComputeMethod,'FORMULA_GOVERNED_SOFTWARE_GPU_CPU_EXECUTED');
+ assert.equal(c.computer.hostCpuAndRamRequiredForSoftwareMath,true);
+ assert.equal(c.computer.independentHostedCpuMayReplaceEndUserDeviceCpu,true);
+ assert.equal(c.computer.graphicalDisplayMayUseOsGraphicsWithoutBecomingLeewayCompute,true);
+ assert.equal(c.computer.contentGenerationClaimsNeedExecutionEvidence,true);
 });
