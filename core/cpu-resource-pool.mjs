@@ -74,6 +74,193 @@ export function createNodeCpuWorkerFactory({
   });
 }
 
+const clockMs = () => Number(process.hrtime.bigint()) / 1e6;
+
+/**
+ * Controlled persistence for the EXISTING canonical CPU worker. This is a
+ * lifecycle extension of the worker factory, not a second scheduler: the
+ * resource pool remains the sole admission authority and the canonical
+ * cpu.worker.js remains the sole arithmetic source.
+ */
+export function createPersistentNodeCpuWorkerFactory({
+  WorkerCtor = null,
+  workerFile = new URL('../fallback/node-cpu.worker.mjs', import.meta.url),
+  maxWorkers = 4,
+  timeoutMs = 30000,
+  now = clockMs
+} = {}) {
+  if (typeof WorkerCtor !== 'function') throw Object.assign(new Error('CPU_WORKER_CONSTRUCTOR_UNBOUND'), { code: 'CPU_WORKER_CONSTRUCTOR_UNBOUND' });
+  if (!Number.isSafeInteger(maxWorkers) || maxWorkers < 1 || maxWorkers > 64) throw Object.assign(new Error('PERSISTENT_WORKER_LIMIT_INVALID'), { code: 'PERSISTENT_WORKER_LIMIT_INVALID' });
+
+  let state = 'CREATED';
+  let nextWorkerId = 1;
+  let completedJobs = 0, failedJobs = 0, recoveries = 0;
+  let initMsTotal = 0, dispatchMsTotal = 0, ipcMsTotal = 0, arithmeticMsTotal = 0;
+  const workers = [];
+  const queue = [];
+  const revoked = new Set();
+
+  function spawnWorker() {
+    const createdAt = now();
+    const worker = new WorkerCtor(workerFile, { workerData: { denyExternalProviders: true } });
+    const record = {
+      id: `CPU-WORKER-${nextWorkerId++}`, worker, threadId: worker.threadId ?? null,
+      busy: false, job: null, jobs: 0, createdAt, alive: true,
+      initMs: now() - createdAt
+    };
+    initMsTotal += record.initMs;
+    workers.push(record);
+    record.onMessage = message => {
+      const job = record.job;
+      if (!job) return;
+      clearTimeout(job.timer);
+      record.job = null; record.busy = false;
+      if (message?.kind !== 'result') {
+        failedJobs++;
+        job.reject(Object.assign(new Error('CPU_WORKER_INVALID_MESSAGE'), { code: 'CPU_WORKER_INVALID_MESSAGE' }));
+        recover(record);
+        drain();
+        return;
+      }
+      const respondedAt = now();
+      const timing = message.timing ?? {};
+      const measured = {
+        enqueueToDispatchMs: job.dispatchedAt - job.enqueuedAt,
+        dispatchToResponseMs: respondedAt - job.dispatchedAt,
+        workerArithmeticMs: Number.isFinite(timing.endedAt - timing.startedAt) ? timing.endedAt - timing.startedAt : null
+      };
+      dispatchMsTotal += measured.enqueueToDispatchMs;
+      ipcMsTotal += measured.dispatchToResponseMs;
+      if (measured.workerArithmeticMs !== null) arithmeticMsTotal += measured.workerArithmeticMs;
+      completedJobs++;
+      record.jobs++;
+      const identity = Object.freeze({ workerId: record.id, threadId: record.threadId, jobsOnWorker: record.jobs });
+      if (message.value && typeof message.value === 'object') {
+        Object.defineProperty(message.value, '_leeWayWorkerTiming', { value: Object.freeze(measured), enumerable: false });
+        Object.defineProperty(message.value, '_leeWayWorkerIdentity', { value: identity, enumerable: false });
+      }
+      job.resolve(message.value);
+      drain();
+    };
+    record.onError = error => failActive(record, error?.code || 'CPU_WORKER_FAILED');
+    record.onExit = () => { if (record.alive) failActive(record, 'CPU_WORKER_EXITED'); };
+    worker.on('message', record.onMessage);
+    worker.on('error', record.onError);
+    worker.on('exit', record.onExit);
+    return record;
+  }
+
+  function failActive(record, code) {
+    const job = record.job;
+    record.alive = false;
+    if (job) {
+      clearTimeout(job.timer);
+      failedJobs++;
+      job.reject(Object.assign(new Error(code), { code }));
+    }
+    recover(record);
+    drain();
+  }
+
+  function recover(record) {
+    record.alive = false;
+    const index = workers.indexOf(record);
+    if (index >= 0) workers.splice(index, 1);
+    recoveries++;
+    try { record.worker.terminate?.(); } catch { /* already terminated */ }
+  }
+
+  function drain() {
+    if (state !== 'ACTIVE') return;
+    while (queue.length) {
+      const idle = workers.find(record => record.alive && !record.busy);
+      if (!idle) {
+        if (workers.length < maxWorkers) spawnWorker();
+        else return;
+        continue;
+      }
+      const job = queue.shift();
+      if (revoked.has(job.correlationId) || job.signal?.aborted) {
+        failedJobs++;
+        job.reject(Object.assign(new Error('WORKER_JOB_REVOKED'), { code: 'WORKER_JOB_REVOKED' }));
+        continue;
+      }
+      idle.busy = true;
+      idle.job = job;
+      job.dispatchedAt = now();
+      job.timer = setTimeout(() => {
+        if (idle.job === job) failActive(idle, 'CPU_WORKER_TIMEOUT');
+      }, timeoutMs);
+      try { idle.worker.postMessage(job.task); }
+      catch (error) { failActive(idle, error?.code || 'CPU_WORKER_DISPATCH_FAILED'); }
+    }
+  }
+
+  function status() {
+    return Object.freeze({
+      schema: 'leeway.edge-gpu.cpu-worker-factory.persistent.v1',
+      state, maxWorkers, concurrencyModel: 'BOUNDED_WORKER_REUSE',
+      liveWorkers: workers.length,
+      workerIds: Object.freeze(workers.map(record => ({ id: record.id, threadId: record.threadId, busy: record.busy, jobs: record.jobs }))),
+      queued: queue.length, completedJobs, failedJobs, recoveries,
+      initMsTotal, dispatchMsTotal, ipcMsTotal, arithmeticMsTotal,
+      createsScheduler: false, physicalGpu: 'NOT_EXECUTED'
+    });
+  }
+
+  async function run(task, context = {}) {
+    if (state === 'SHUTDOWN') throw Object.assign(new Error('WORKER_FACTORY_SHUTDOWN'), { code: 'WORKER_FACTORY_SHUTDOWN' });
+    const authorization = context.authorization ?? {};
+    const correlationId = authorization.correlationId;
+    if (!valid(correlationId) || !CAPABILITIES.includes(authorization.capability)) {
+      throw Object.assign(new Error('WORKER_JOB_UNAUTHORIZED'), { code: 'WORKER_JOB_UNAUTHORIZED' });
+    }
+    if (revoked.has(correlationId)) throw Object.assign(new Error('WORKER_JOB_REVOKED'), { code: 'WORKER_JOB_REVOKED' });
+    if (state === 'CREATED') { state = 'ACTIVE'; spawnWorker(); }
+    const enqueuedAt = now();
+    return new Promise((resolve, reject) => {
+      queue.push({ task, correlationId, signal: context.signal ?? null, enqueuedAt, dispatchedAt: 0, timer: null, resolve, reject });
+      drain();
+    });
+  }
+
+  function cancel(correlationId) {
+    if (!valid(correlationId)) return false;
+    revoked.add(correlationId);
+    const index = queue.findIndex(job => job.correlationId === correlationId);
+    if (index >= 0) {
+      const [job] = queue.splice(index, 1);
+      failedJobs++;
+      job.reject(Object.assign(new Error('WORKER_JOB_REVOKED'), { code: 'WORKER_JOB_REVOKED' }));
+      return true;
+    }
+    const active = workers.find(record => record.job?.correlationId === correlationId);
+    if (active) { failActive(active, 'WORKER_JOB_REVOKED'); return true; }
+    return false;
+  }
+
+  async function shutdown() {
+    if (state === 'SHUTDOWN') return status();
+    state = 'SHUTDOWN';
+    for (const job of queue.splice(0)) {
+      failedJobs++;
+      job.reject(Object.assign(new Error('WORKER_FACTORY_SHUTDOWN'), { code: 'WORKER_FACTORY_SHUTDOWN' }));
+    }
+    const pending = workers.splice(0).map(async record => {
+      record.alive = false;
+      if (record.job) clearTimeout(record.job.timer);
+      try { await record.worker.terminate?.(); } catch { /* ignore */ }
+    });
+    await Promise.all(pending);
+    return status();
+  }
+
+  return Object.freeze({
+    schema: 'leeway.edge-gpu.cpu-worker-factory.persistent.v1',
+    persistent: true, run, cancel, status, shutdown
+  });
+}
+
 function validateAuthorization(authorization, resource) {
   if (!authorization || typeof authorization !== 'object') return denied('BLOCKED', 'AUTHORIZATION_REQUIRED');
   for (const field of ['subjectRef', 'tenantRef', 'approvalRef', 'correlationId']) {
@@ -128,7 +315,7 @@ export function createCpuResourcePool({
     });
   }
 
-  async function submit({ authorization = null, task = null, resource = null } = {}) {
+  async function submit({ authorization = null, task = null, resource = null, context = null, signal = null } = {}) {
     const binding = status();
     if (binding.state !== 'CONFIGURED') return denied('BLOCKED', 'CPU_RESOURCE_POOL_UNBOUND', { missing: binding.missing.slice() });
     const invalid = validateAuthorization(authorization, resource);
@@ -164,7 +351,9 @@ export function createCpuResourcePool({
         },
         // The existing controller bridge admits a task by calling run().
         // Delegate only to the canonical CPU worker factory; no new engine.
-        run: () => workerFactory.run(task)
+        run: () => workerFactory.run(task, {
+          authorization, resource, context, signal, leaseRef: lease.leaseRef, now: now()
+        })
       });
       // Existing governed scheduler is the sole admission authority.
       const output = await executeGPU(admittedTask, controller);
