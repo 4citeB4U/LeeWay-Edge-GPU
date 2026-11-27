@@ -18,12 +18,24 @@ if (workerData?.denyExternalProviders === true) {
   }
 }
 
+// Timing is attached by the existing host shim, not by a second arithmetic
+// engine. The canonical cpu.worker.js remains the only computation source.
+let activeTiming = null;
 globalThis.self = {
-  postMessage(value) { parentPort.postMessage({ kind: 'result', value }); },
+  postMessage(value) {
+    parentPort.postMessage({
+      kind: 'result', value,
+      timing: activeTiming ? { ...activeTiming, endedAt: globalThis.performance.now() } : null
+    });
+  }
 };
 
 // Register the listener only after import completes; parentPort queues messages
 // until it has a listener, so early submissions are not dropped.
 await import('./cpu.worker.js');
 if (typeof globalThis.self.onmessage !== 'function') throw new Error('CPU_WORKER_HANDLER_MISSING');
-parentPort.on('message', data => globalThis.self.onmessage({ data }));
+parentPort.on('message', data => {
+  activeTiming = { startedAt: globalThis.performance.now() };
+  try { globalThis.self.onmessage({ data }); }
+  finally { activeTiming = null; }
+});
